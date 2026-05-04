@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DecimalPipe, DatePipe, CurrencyPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    RouterLink, DecimalPipe, DatePipe, CurrencyPipe,
+    RouterLink, DecimalPipe,
     MatCardModule, MatButtonModule, MatIconModule,
     MatProgressBarModule, MatDividerModule
   ],
