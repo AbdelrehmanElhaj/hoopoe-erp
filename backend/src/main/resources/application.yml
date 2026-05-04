@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: saudi-accounting-system
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/accounting_db}
+    username: ${DB_USER:accounting_user}
+    password: ${DB_PASSWORD:accounting_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      pool-name: AccountingPool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        multiTenancy: SCHEMA
+    open-in-view: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration/public
+    schemas: public
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-this-in-production-must-be-256-bits-long-at-minimum-for-HS256}
+    expiration-ms: 86400000        # 24 hours
+    refresh-expiration-ms: 604800000  # 7 days
+
+  zatca:
+    environment: ${ZATCA_ENV:sandbox}
+    sandbox-url: https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal
+    production-url: https://gw-fatoora.zatca.gov.sa/e-invoicing/core
+
+  multitenancy:
+    tenant-header: X-Tenant-ID
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.accounting: DEBUG
+    org.flywaydb: INFO
+    org.hibernate.SQL: DEBUG
