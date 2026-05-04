@@ -37,6 +37,7 @@ public class InvoiceResponse {
     private String qrCodeBase64;
     private boolean creditNote;
     private UUID originalInvoiceId;
+    private UUID journalEntryId;
     private List<ItemResponse> items;
     private Instant createdAt;
 
@@ -94,6 +95,7 @@ public class InvoiceResponse {
                 .qrCodeBase64(invoice.getQrCodeBase64())
                 .creditNote(invoice.isCreditNote())
                 .originalInvoiceId(invoice.getOriginalInvoiceId())
+                .journalEntryId(invoice.getJournalEntryId())
                 .items(items)
                 .createdAt(invoice.getCreatedAt())
                 .build();

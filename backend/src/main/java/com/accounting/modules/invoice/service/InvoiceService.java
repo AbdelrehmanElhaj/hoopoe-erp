@@ -33,6 +33,7 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final VatCalculationService vatCalculationService;
+    private final InvoiceJournalService invoiceJournalService;
     private final ZatcaXmlService xmlService;
     private final ZatcaQrCodeService qrService;
     private final ZatcaSignatureService signatureService;
@@ -98,6 +99,11 @@ public class InvoiceService {
         invoice.setQrCodeBase64(qrCode);
         invoice.setStatus(Invoice.InvoiceStatus.CONFIRMED);
 
+        invoice = invoiceRepository.save(invoice);
+
+        // Auto-post accounting journal entry
+        var journalEntry = invoiceJournalService.createForInvoice(invoice);
+        invoice.setJournalEntryId(journalEntry.getId());
         invoice = invoiceRepository.save(invoice);
 
         submitToZatca(invoice);

@@ -59,6 +59,7 @@ export interface Invoice {
   dueDate: string;
   creditNote: boolean;
   originalInvoiceId: string | null;
+  journalEntryId: string | null;
   items: InvoiceLineItem[];
   createdAt: string;
 }

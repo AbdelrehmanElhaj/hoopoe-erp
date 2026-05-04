@@ -21,7 +21,10 @@ export interface JournalEntry {
   entryNumber: string;
   entryDate: string;
   description: string;
+  reference: string | null;
   status: string;
+  sourceType: string | null;
+  sourceId: string | null;
   totalDebit: number;
   totalCredit: number;
   postedAt: string | null;

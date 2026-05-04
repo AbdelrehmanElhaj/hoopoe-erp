@@ -135,6 +135,56 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
           </mat-card-content>
         </mat-card>
 
+        <!-- Accounting Journal Entry -->
+        @if (inv.journalEntryId) {
+          <mat-card class="journal-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="journal-icon">menu_book</mat-icon>
+              <mat-card-title>القيد المحاسبي</mat-card-title>
+              <mat-card-subtitle>تم إنشاؤه تلقائياً عند التأكيد</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="journal-lines">
+                <div class="journal-line header-line">
+                  <span class="col-account">الحساب</span>
+                  <span class="col-amount">مدين</span>
+                  <span class="col-amount">دائن</span>
+                </div>
+                @if (inv.invoiceType === 'STANDARD') {
+                  <div class="journal-line">
+                    <span class="col-account"><span class="acc-code">1102</span> العملاء والذمم المدينة</span>
+                    <span class="col-amount debit">{{ inv.totalAmount | number:'1.2-2' }}</span>
+                    <span class="col-amount">—</span>
+                  </div>
+                } @else {
+                  <div class="journal-line">
+                    <span class="col-account"><span class="acc-code">1101</span> النقدية وما يعادلها</span>
+                    <span class="col-amount debit">{{ inv.totalAmount | number:'1.2-2' }}</span>
+                    <span class="col-amount">—</span>
+                  </div>
+                }
+                <div class="journal-line">
+                  <span class="col-account"><span class="acc-code">410101</span> مبيعات خاضعة للضريبة</span>
+                  <span class="col-amount">—</span>
+                  <span class="col-amount credit">{{ inv.taxableAmount | number:'1.2-2' }}</span>
+                </div>
+                @if (inv.vatAmount > 0) {
+                  <div class="journal-line">
+                    <span class="col-account"><span class="acc-code">2102</span> ضريبة القيمة المضافة المخرجات</span>
+                    <span class="col-amount">—</span>
+                    <span class="col-amount credit">{{ inv.vatAmount | number:'1.2-2' }}</span>
+                  </div>
+                }
+              </div>
+            </mat-card-content>
+            <mat-card-actions>
+              <a mat-stroked-button [routerLink]="['/journal', inv.journalEntryId]">
+                <mat-icon>open_in_new</mat-icon> عرض القيد كاملاً
+              </a>
+            </mat-card-actions>
+          </mat-card>
+        }
+
         <!-- QR Code (ZATCA) -->
         @if (inv.qrCodeBase64) {
           <mat-card class="qr-card">
@@ -160,6 +210,17 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
     .summary-value.primary { color: #1a237e; font-size: 1.6rem; }
 
     .parties-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+    .journal-card { margin-top: 16px; }
+    .journal-icon { color: #1a237e; background: #e8eaf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .journal-lines { display: flex; flex-direction: column; gap: 0; margin-top: 8px; font-size: 0.9rem; direction: rtl; }
+    .journal-line { display: grid; grid-template-columns: 1fr 130px 130px; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    .journal-line.header-line { font-weight: 700; font-size: 0.8rem; color: #546e7a; background: #f5f5f5; border-radius: 6px 6px 0 0; }
+    .col-account { display: flex; align-items: center; gap: 8px; }
+    .col-amount { text-align: left; font-family: monospace; direction: ltr; }
+    .acc-code { background: #e8eaf6; color: #1a237e; padding: 2px 6px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; font-family: monospace; }
+    .debit  { color: #1b5e20; font-weight: 600; }
+    .credit { color: #1a237e; font-weight: 600; }
 
     .qr-card { margin-top: 16px; }
     .qr-content { display: flex; flex-direction: column; align-items: center; padding: 16px; }

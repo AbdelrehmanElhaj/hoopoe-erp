@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { JournalService, JournalEntry } from '../../../core/services/journal.service';
 
@@ -14,7 +15,7 @@ import { JournalService, JournalEntry } from '../../../core/services/journal.ser
   standalone: true,
   imports: [
     RouterLink, MatCardModule, MatTableModule, MatButtonModule,
-    MatIconModule, MatProgressBarModule, MatSnackBarModule, DecimalPipe, DatePipe
+    MatIconModule, MatProgressBarModule, MatSnackBarModule, MatTooltipModule, DecimalPipe, DatePipe
   ],
   template: `
     <div class="page-container">
@@ -74,7 +75,10 @@ import { JournalService, JournalEntry } from '../../../core/services/journal.ser
 
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let e">
+              <td mat-cell *matCellDef="let e" class="actions-cell">
+                <a mat-icon-button [routerLink]="['/journal', e.id]" matTooltip="عرض">
+                  <mat-icon>visibility</mat-icon>
+                </a>
                 @if (e.status === 'DRAFT') {
                   <button mat-stroked-button color="primary" (click)="post(e.id)" class="action-btn">
                     <mat-icon>publish</mat-icon> ترحيل
@@ -101,6 +105,7 @@ import { JournalService, JournalEntry } from '../../../core/services/journal.ser
   styles: [`
     .status-chip { padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
     .action-btn { height: 32px; font-size: 0.8rem; }
+    .actions-cell { display: flex; align-items: center; gap: 4px; }
   `]
 })
 export class JournalListComponent implements OnInit {

@@ -8,5 +8,9 @@ export const JOURNAL_ROUTES: Routes = [
   {
     path: 'new',
     loadComponent: () => import('./create/journal-create.component').then(m => m.JournalCreateComponent)
+  },
+  {
+    path: ':id',
+    loadComponent: () => import('./view/journal-view.component').then(m => m.JournalViewComponent)
   }
 ];
