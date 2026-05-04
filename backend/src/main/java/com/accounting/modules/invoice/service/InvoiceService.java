@@ -20,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.hibernate.Hibernate;
+
 import java.time.Instant;
 import java.time.Year;
 import java.util.Base64;
@@ -39,6 +41,11 @@ public class InvoiceService {
     private final ZatcaQrCodeService qrService;
     private final ZatcaSignatureService signatureService;
     private final ZatcaApiClient zatcaApiClient;
+
+    @Transactional
+    public InvoiceResponse createAndReturn(CreateInvoiceRequest request) {
+        return InvoiceResponse.from(create(request));
+    }
 
     @Transactional
     public Invoice create(CreateInvoiceRequest request) {
@@ -78,6 +85,13 @@ public class InvoiceService {
     }
 
     @Transactional
+    public InvoiceResponse confirmAndReturn(UUID invoiceId, String subdomain) throws Exception {
+        Invoice invoice = confirm(invoiceId, subdomain);
+        Hibernate.initialize(invoice.getItems());
+        return InvoiceResponse.from(invoice);
+    }
+
+    @Transactional
     public Invoice confirm(UUID invoiceId, String subdomain) throws Exception {
         Invoice invoice = findById(invoiceId);
 
@@ -110,6 +124,14 @@ public class InvoiceService {
         submitToZatca(invoice);
 
         return invoice;
+    }
+
+    @Transactional
+    public InvoiceResponse submitToZatcaAndReturn(UUID invoiceId) {
+        Invoice invoice = findByIdWithItems(invoiceId);
+        invoice = submitToZatca(invoice);
+        Hibernate.initialize(invoice.getItems());
+        return InvoiceResponse.from(invoice);
     }
 
     @Transactional
@@ -150,6 +172,13 @@ public class InvoiceService {
         }
 
         return invoiceRepository.save(invoice);
+    }
+
+    @Transactional
+    public InvoiceResponse createCreditNoteAndReturn(UUID originalInvoiceId, CreateCreditNoteRequest request) {
+        Invoice saved = createCreditNote(originalInvoiceId, request);
+        Hibernate.initialize(saved.getItems());
+        return InvoiceResponse.from(saved);
     }
 
     @Transactional
@@ -218,6 +247,13 @@ public class InvoiceService {
     }
 
     @Transactional
+    public InvoiceResponse cancelAndReturn(UUID invoiceId, String reason) {
+        Invoice invoice = cancel(invoiceId, reason);
+        Hibernate.initialize(invoice.getItems());
+        return InvoiceResponse.from(invoice);
+    }
+
+    @Transactional
     public Invoice cancel(UUID invoiceId, String reason) {
         Invoice invoice = findById(invoiceId);
         if (invoice.getStatus() == Invoice.InvoiceStatus.CANCELLED) {
@@ -238,6 +274,24 @@ public class InvoiceService {
     @Transactional(readOnly = true)
     public Invoice findById(UUID id) {
         return invoiceRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Invoice not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public InvoiceResponse findResponseById(UUID id) {
+        Invoice invoice = invoiceRepository.findByIdWithItems(id)
+                .orElseThrow(() -> new BusinessException("Invoice not found", HttpStatus.NOT_FOUND));
+        return InvoiceResponse.from(invoice);
+    }
+
+    @Transactional(readOnly = true)
+    public Invoice findByIdWithItemsLoaded(UUID id) {
+        return invoiceRepository.findByIdWithItems(id)
+                .orElseThrow(() -> new BusinessException("Invoice not found", HttpStatus.NOT_FOUND));
+    }
+
+    private Invoice findByIdWithItems(UUID id) {
+        return invoiceRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new BusinessException("Invoice not found", HttpStatus.NOT_FOUND));
     }
 

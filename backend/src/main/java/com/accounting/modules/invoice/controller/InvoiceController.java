@@ -3,7 +3,6 @@ package com.accounting.modules.invoice.controller;
 import com.accounting.modules.invoice.dto.CreateCreditNoteRequest;
 import com.accounting.modules.invoice.dto.CreateInvoiceRequest;
 import com.accounting.modules.invoice.dto.InvoiceResponse;
-import com.accounting.modules.invoice.entity.Invoice;
 import com.accounting.modules.invoice.service.InvoicePdfService;
 import com.accounting.modules.invoice.service.InvoiceService;
 import com.accounting.multitenancy.TenantContext;
@@ -39,26 +38,24 @@ public class InvoiceController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<InvoiceResponse>> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                InvoiceResponse.from(invoiceService.findById(id))));
+        return ResponseEntity.ok(ApiResponse.ok(invoiceService.findResponseById(id)));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'ACCOUNTANT')")
     public ResponseEntity<ApiResponse<InvoiceResponse>> create(
             @Valid @RequestBody CreateInvoiceRequest request) {
-        Invoice invoice = invoiceService.create(request);
+        InvoiceResponse response = invoiceService.createAndReturn(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(InvoiceResponse.from(invoice), "Invoice created"));
+                .body(ApiResponse.ok(response, "Invoice created"));
     }
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'ACCOUNTANT')")
     public ResponseEntity<ApiResponse<InvoiceResponse>> confirm(@PathVariable UUID id) throws Exception {
         String subdomain = TenantContext.getCurrentTenant();
-        Invoice invoice = invoiceService.confirm(id, subdomain);
-        return ResponseEntity.ok(ApiResponse.ok(InvoiceResponse.from(invoice),
-                "Invoice confirmed and submitted to ZATCA"));
+        InvoiceResponse response = invoiceService.confirmAndReturn(id, subdomain);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Invoice confirmed and submitted to ZATCA"));
     }
 
     @PostMapping("/{id}/credit-note")
@@ -66,9 +63,9 @@ public class InvoiceController {
     public ResponseEntity<ApiResponse<InvoiceResponse>> createCreditNote(
             @PathVariable UUID id,
             @Valid @RequestBody CreateCreditNoteRequest request) {
-        Invoice creditNote = invoiceService.createCreditNote(id, request);
+        InvoiceResponse response = invoiceService.createCreditNoteAndReturn(id, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(InvoiceResponse.from(creditNote), "تم إنشاء الإشعار الدائن"));
+                .body(ApiResponse.ok(response, "تم إنشاء الإشعار الدائن"));
     }
 
     @PostMapping("/{id}/cancel")
@@ -76,21 +73,20 @@ public class InvoiceController {
     public ResponseEntity<ApiResponse<InvoiceResponse>> cancel(
             @PathVariable UUID id,
             @RequestParam String reason) {
-        Invoice invoice = invoiceService.cancel(id, reason);
-        return ResponseEntity.ok(ApiResponse.ok(InvoiceResponse.from(invoice), "Invoice cancelled"));
+        InvoiceResponse response = invoiceService.cancelAndReturn(id, reason);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Invoice cancelled"));
     }
 
     @PostMapping("/{id}/submit-zatca")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ResponseEntity<ApiResponse<InvoiceResponse>> submitToZatca(@PathVariable UUID id) {
-        Invoice invoice = invoiceService.findById(id);
-        invoice = invoiceService.submitToZatca(invoice);
-        return ResponseEntity.ok(ApiResponse.ok(InvoiceResponse.from(invoice), "Submitted to ZATCA"));
+        InvoiceResponse response = invoiceService.submitToZatcaAndReturn(id);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Submitted to ZATCA"));
     }
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> pdf(@PathVariable UUID id) {
-        Invoice invoice = invoiceService.findById(id);
+        var invoice = invoiceService.findByIdWithItemsLoaded(id);
         byte[] pdfBytes = invoicePdfService.generate(invoice);
         String filename = "invoice-" + invoice.getInvoiceNumber() + ".pdf";
         return ResponseEntity.ok()
