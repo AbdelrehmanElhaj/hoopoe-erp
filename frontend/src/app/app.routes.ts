@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/invoices', pathMatch: 'full' },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
@@ -12,6 +12,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./layout/shell/shell.component').then(m => m.ShellComponent),
     children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
       {
         path: 'invoices',
         loadChildren: () => import('./features/invoices/invoices.routes').then(m => m.INVOICES_ROUTES)
@@ -38,5 +42,5 @@ export const routes: Routes = [
       }
     ]
   },
-  { path: '**', redirectTo: '/invoices' }
+  { path: '**', redirectTo: '/dashboard' }
 ];

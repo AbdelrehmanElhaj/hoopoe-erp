@@ -155,6 +155,7 @@ export class ShellComponent {
   auth = inject(AuthService);
 
   navItems: NavItem[] = [
+    { icon: 'dashboard',      label: 'لوحة التحكم',       route: '/dashboard' },
     { icon: 'receipt_long',   label: 'الفواتير',          route: '/invoices' },
     { icon: 'account_tree',   label: 'دليل الحسابات',     route: '/accounts' },
     { icon: 'book',           label: 'القيود اليومية',    route: '/journal' },
