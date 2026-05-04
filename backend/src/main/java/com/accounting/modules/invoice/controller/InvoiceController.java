@@ -32,8 +32,7 @@ public class InvoiceController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<InvoiceResponse>>> findAll(
             @PageableDefault(size = 20, sort = "issueDatetime") Pageable pageable) {
-        Page<InvoiceResponse> page = invoiceService.findAll(pageable)
-                .map(InvoiceResponse::from);
+        Page<InvoiceResponse> page = invoiceService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

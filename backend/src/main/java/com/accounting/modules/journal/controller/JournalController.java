@@ -29,8 +29,7 @@ public class JournalController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<JournalEntryResponse>>> findAll(
             @PageableDefault(size = 20, sort = "entryDate") Pageable pageable) {
-        Page<JournalEntryResponse> page = journalService.findAll(pageable)
-                .map(JournalEntryResponse::from);
+        Page<JournalEntryResponse> page = journalService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

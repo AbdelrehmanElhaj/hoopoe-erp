@@ -1,6 +1,7 @@
 package com.accounting.modules.invoice.service;
 
 import com.accounting.modules.invoice.dto.CreateInvoiceRequest;
+import com.accounting.modules.invoice.dto.InvoiceResponse;
 import com.accounting.modules.invoice.dto.InvoiceTotals;
 import com.accounting.modules.invoice.entity.Invoice;
 import com.accounting.modules.invoice.entity.InvoiceItem;
@@ -158,8 +159,8 @@ public class InvoiceService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Invoice> findAll(Pageable pageable) {
-        return invoiceRepository.findAll(pageable);
+    public Page<InvoiceResponse> findAll(Pageable pageable) {
+        return invoiceRepository.findAll(pageable).map(InvoiceResponse::from);
     }
 
     @Transactional(readOnly = true)

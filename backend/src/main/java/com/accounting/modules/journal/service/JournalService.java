@@ -3,6 +3,7 @@ package com.accounting.modules.journal.service;
 import com.accounting.modules.accounts.entity.Account;
 import com.accounting.modules.accounts.repository.AccountRepository;
 import com.accounting.modules.journal.dto.CreateJournalEntryRequest;
+import com.accounting.modules.journal.dto.JournalEntryResponse;
 import com.accounting.modules.journal.dto.JournalLineRequest;
 import com.accounting.modules.journal.entity.JournalEntry;
 import com.accounting.modules.journal.entity.JournalEntryLine;
@@ -110,8 +111,8 @@ public class JournalService {
     }
 
     @Transactional(readOnly = true)
-    public Page<JournalEntry> findAll(Pageable pageable) {
-        return journalRepository.findAll(pageable);
+    public Page<JournalEntryResponse> findAll(Pageable pageable) {
+        return journalRepository.findAll(pageable).map(JournalEntryResponse::from);
     }
 
     @Transactional(readOnly = true)
