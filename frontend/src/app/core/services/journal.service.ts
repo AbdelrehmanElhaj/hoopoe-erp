@@ -39,6 +39,7 @@ export interface JournalEntryLine {
   accountNameAr: string;
   debit: number;
   credit: number;
+  description: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
