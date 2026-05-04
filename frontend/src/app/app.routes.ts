@@ -25,6 +25,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/accounts/accounts.routes').then(m => m.ACCOUNTS_ROUTES)
       },
       {
+        path: 'contacts',
+        loadChildren: () => import('./features/contacts/contacts.routes').then(m => m.CONTACTS_ROUTES)
+      },
+      {
         path: 'journal',
         loadChildren: () => import('./features/journal/journal.routes').then(m => m.JOURNAL_ROUTES)
       },
