@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal, Input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +8,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { InvoiceService, Invoice } from '../../../core/services/invoice.service';
 
@@ -14,9 +17,10 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
   selector: 'app-invoice-view',
   standalone: true,
   imports: [
-    RouterLink, MatCardModule, MatButtonModule, MatIconModule,
-    MatDividerModule, MatProgressBarModule, MatSnackBarModule,
-    MatTableModule, DecimalPipe, DatePipe
+    RouterLink, FormsModule,
+    MatCardModule, MatButtonModule, MatIconModule, MatDividerModule,
+    MatProgressBarModule, MatSnackBarModule, MatTableModule,
+    MatFormFieldModule, MatInputModule, DecimalPipe, DatePipe
   ],
   template: `
     <div class="page-container">
@@ -49,8 +53,48 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
                 {{ confirming() ? 'جارٍ التأكيد...' : 'تأكيد وإرسال ZATCA' }}
               </button>
             }
+            @if (inv.status === 'CONFIRMED' && !inv.creditNote) {
+              <button mat-stroked-button color="warn" (click)="toggleCnForm()">
+                <mat-icon>reply</mat-icon> إشعار دائن
+              </button>
+            }
           </div>
         </div>
+
+        <!-- Credit note origin banner -->
+        @if (inv.creditNote) {
+          <div class="cn-banner">
+            <mat-icon>reply</mat-icon>
+            <span>هذه وثيقة إشعار دائن تعكس الفاتورة الأصلية</span>
+            @if (inv.originalInvoiceId) {
+              <a mat-button [routerLink]="['/invoices', inv.originalInvoiceId]">
+                عرض الفاتورة الأصلية <mat-icon>arrow_back</mat-icon>
+              </a>
+            }
+          </div>
+        }
+
+        <!-- Credit note inline form -->
+        @if (showCnForm()) {
+          <div class="cn-form-card">
+            <h3><mat-icon>reply</mat-icon> إصدار إشعار دائن</h3>
+            <p class="cn-hint">سيتم إنشاء إشعار دائن يعكس كامل مبالغ الفاتورة وقيد عكسي تلقائياً.</p>
+            <mat-form-field appearance="outline" class="cn-reason-field">
+              <mat-label>سبب الإشعار الدائن</mat-label>
+              <textarea matInput [(ngModel)]="cnReason" rows="3"
+                        placeholder="مثال: إلغاء الطلب، خطأ في الأسعار..."></textarea>
+            </mat-form-field>
+            <div class="cn-form-actions">
+              <button mat-flat-button color="warn"
+                      (click)="createCreditNote(inv.id)"
+                      [disabled]="creatingCn() || !cnReason.trim()">
+                @if (creatingCn()) { <span>جارٍ الإنشاء...</span> }
+                @else { <span><mat-icon>check</mat-icon> تأكيد الإشعار الدائن</span> }
+              </button>
+              <button mat-stroked-button (click)="toggleCnForm()">إلغاء</button>
+            </div>
+          </div>
+        }
 
         <!-- Summary cards -->
         <div class="summary-grid">
@@ -211,6 +255,23 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
 
     .parties-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 
+    .cn-banner {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: #fff3e0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;
+      color: #e65100; font-weight: 600;
+      mat-icon { color: #e65100; }
+      a { margin-right: auto; }
+    }
+
+    .cn-form-card {
+      background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #e65100; font-size: 1rem; }
+    }
+    .cn-hint { color: #78909c; font-size: 0.85rem; margin: 0 0 16px; }
+    .cn-reason-field { width: 100%; }
+    .cn-form-actions { display: flex; gap: 10px; margin-top: 8px; }
+
     .journal-card { margin-top: 16px; }
     .journal-icon { color: #1a237e; background: #e8eaf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .journal-lines { display: flex; flex-direction: column; gap: 0; margin-top: 8px; font-size: 0.9rem; direction: rtl; }
@@ -233,11 +294,15 @@ export class InvoiceViewComponent implements OnInit {
 
   private invoiceService = inject(InvoiceService);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
 
   invoice = signal<Invoice | null>(null);
   loading = signal(true);
   confirming = signal(false);
   downloadingPdf = signal(false);
+  showCnForm = signal(false);
+  creatingCn = signal(false);
+  cnReason = '';
 
   itemCols = ['line', 'desc', 'qty', 'price', 'tax', 'total'];
 
@@ -278,6 +343,27 @@ export class InvoiceViewComponent implements OnInit {
       error: () => {
         this.downloadingPdf.set(false);
         this.snackBar.open('فشل تحميل PDF', 'إغلاق', { duration: 3000 });
+      }
+    });
+  }
+
+  toggleCnForm(): void {
+    this.showCnForm.update(v => !v);
+    this.cnReason = '';
+  }
+
+  createCreditNote(id: string): void {
+    this.creatingCn.set(true);
+    this.invoiceService.createCreditNote(id, this.cnReason).subscribe({
+      next: res => {
+        this.creatingCn.set(false);
+        this.showCnForm.set(false);
+        this.snackBar.open('تم إنشاء الإشعار الدائن بنجاح', 'إغلاق', { duration: 3000 });
+        this.router.navigate(['/invoices', res.data.id]);
+      },
+      error: err => {
+        this.creatingCn.set(false);
+        this.snackBar.open(err.error?.message ?? 'فشل إنشاء الإشعار الدائن', 'إغلاق', { duration: 4000 });
       }
     });
   }

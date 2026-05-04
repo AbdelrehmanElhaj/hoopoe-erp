@@ -39,7 +39,12 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
             <ng-container matColumnDef="invoiceNumber">
               <th mat-header-cell *matHeaderCellDef>رقم الفاتورة</th>
               <td mat-cell *matCellDef="let inv">
-                <a [routerLink]="[inv.id]" class="link-primary">{{ inv.invoiceNumber }}</a>
+                <div class="num-cell">
+                  <a [routerLink]="[inv.id]" class="link-primary">{{ inv.invoiceNumber }}</a>
+                  @if (inv.creditNote) {
+                    <span class="cn-badge">إشعار دائن</span>
+                  }
+                </div>
               </td>
             </ng-container>
 
@@ -116,6 +121,9 @@ import { InvoiceService, Invoice } from '../../../core/services/invoice.service'
   styles: [`
     .w-full { width: 100%; }
     .link-primary { color: #1a237e; text-decoration: none; font-weight: 600; }
+    .num-cell { display: flex; align-items: center; gap: 8px; }
+    .cn-badge { background: #fff3e0; color: #e65100; font-size: 0.7rem; font-weight: 700;
+                padding: 2px 6px; border-radius: 8px; white-space: nowrap; }
     .status-chip {
       padding: 4px 10px; border-radius: 12px;
       font-size: 0.78rem; font-weight: 600;

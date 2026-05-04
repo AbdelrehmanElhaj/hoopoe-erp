@@ -91,6 +91,66 @@ public class InvoiceJournalService {
         return saved;
     }
 
+    @Transactional
+    public JournalEntry createReversalForCreditNote(Invoice creditNote) {
+        boolean isStandard = creditNote.getInvoiceType() == Invoice.InvoiceType.STANDARD;
+
+        Account creditAccount = findAccount(isStandard ? AR_ACCOUNT : CASH_ACCOUNT);
+        Account salesAccount  = findAccount(SALES_ACCOUNT);
+        Account vatOutAccount = findAccount(VAT_OUT_ACCOUNT);
+
+        LocalDate entryDate = creditNote.getIssueDatetime()
+                .atZone(ZoneId.of("Asia/Riyadh"))
+                .toLocalDate();
+
+        JournalEntry entry = JournalEntry.builder()
+                .entryNumber(generateEntryNumber())
+                .entryDate(entryDate)
+                .description("قيد إشعار دائن رقم " + creditNote.getInvoiceNumber())
+                .reference(creditNote.getInvoiceNumber())
+                .sourceType("CREDIT_NOTE")
+                .sourceId(creditNote.getUuid())
+                .status(JournalEntry.EntryStatus.POSTED)
+                .postedAt(Instant.now())
+                .build();
+
+        int lineNum = 1;
+
+        // Debit: Sales — reversal of revenue
+        entry.getLines().add(JournalEntryLine.builder()
+                .entry(entry).lineNumber(lineNum++)
+                .account(salesAccount)
+                .debit(creditNote.getTaxableAmount()).credit(BigDecimal.ZERO)
+                .description("عكس إيراد - " + creditNote.getInvoiceNumber())
+                .build());
+
+        // Debit: Output VAT — reversal of VAT liability (only if VAT > 0)
+        if (creditNote.getVatAmount().compareTo(BigDecimal.ZERO) > 0) {
+            entry.getLines().add(JournalEntryLine.builder()
+                    .entry(entry).lineNumber(lineNum++)
+                    .account(vatOutAccount)
+                    .debit(creditNote.getVatAmount()).credit(BigDecimal.ZERO)
+                    .description("عكس ضريبة القيمة المضافة - " + creditNote.getInvoiceNumber())
+                    .build());
+        }
+
+        // Credit: AR or Cash — reversal of the receivable / cash
+        String creditDesc = isStandard
+                ? "عكس ذمة عميل - " + (creditNote.getBuyerName() != null ? creditNote.getBuyerName() : creditNote.getInvoiceNumber())
+                : "عكس مبيعات نقدية - " + creditNote.getInvoiceNumber();
+
+        entry.getLines().add(JournalEntryLine.builder()
+                .entry(entry).lineNumber(lineNum)
+                .account(creditAccount)
+                .debit(BigDecimal.ZERO).credit(creditNote.getTotalAmount())
+                .description(creditDesc)
+                .build());
+
+        JournalEntry saved = journalRepository.save(entry);
+        log.info("Reversal journal {} posted for credit note {}", saved.getEntryNumber(), creditNote.getInvoiceNumber());
+        return saved;
+    }
+
     private Account findAccount(String code) {
         return accountRepository.findByCode(code)
                 .orElseThrow(() -> new BusinessException(

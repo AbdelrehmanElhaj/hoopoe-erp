@@ -87,6 +87,10 @@ export class InvoiceService {
     return this.http.get<{ data: Invoice }>(`${this.BASE}/${id}`);
   }
 
+  createCreditNote(id: string, reason: string): Observable<{ data: Invoice }> {
+    return this.http.post<{ data: Invoice }>(`${this.BASE}/${id}/credit-note`, { reason });
+  }
+
   downloadPdf(id: string): Observable<Blob> {
     return this.http.get(`${this.BASE}/${id}/pdf`, { responseType: 'blob' });
   }

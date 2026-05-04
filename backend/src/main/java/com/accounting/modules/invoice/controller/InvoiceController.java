@@ -1,5 +1,6 @@
 package com.accounting.modules.invoice.controller;
 
+import com.accounting.modules.invoice.dto.CreateCreditNoteRequest;
 import com.accounting.modules.invoice.dto.CreateInvoiceRequest;
 import com.accounting.modules.invoice.dto.InvoiceResponse;
 import com.accounting.modules.invoice.entity.Invoice;
@@ -58,6 +59,16 @@ public class InvoiceController {
         Invoice invoice = invoiceService.confirm(id, subdomain);
         return ResponseEntity.ok(ApiResponse.ok(InvoiceResponse.from(invoice),
                 "Invoice confirmed and submitted to ZATCA"));
+    }
+
+    @PostMapping("/{id}/credit-note")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'ACCOUNTANT')")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> createCreditNote(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateCreditNoteRequest request) {
+        Invoice creditNote = invoiceService.createCreditNote(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(InvoiceResponse.from(creditNote), "تم إنشاء الإشعار الدائن"));
     }
 
     @PostMapping("/{id}/cancel")

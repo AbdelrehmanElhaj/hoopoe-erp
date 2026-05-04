@@ -1,5 +1,6 @@
 package com.accounting.modules.invoice.service;
 
+import com.accounting.modules.invoice.dto.CreateCreditNoteRequest;
 import com.accounting.modules.invoice.dto.CreateInvoiceRequest;
 import com.accounting.modules.invoice.dto.InvoiceResponse;
 import com.accounting.modules.invoice.dto.InvoiceTotals;
@@ -152,6 +153,71 @@ public class InvoiceService {
     }
 
     @Transactional
+    public Invoice createCreditNote(UUID originalInvoiceId, CreateCreditNoteRequest request) {
+        Invoice original = findById(originalInvoiceId);
+
+        if (original.getStatus() != Invoice.InvoiceStatus.CONFIRMED) {
+            throw new BusinessException("يمكن إصدار إشعار دائن للفواتير المؤكدة فقط");
+        }
+        if (original.isCreditNote()) {
+            throw new BusinessException("لا يمكن إصدار إشعار دائن لإشعار دائن");
+        }
+
+        // Build credit note as a mirror of the original
+        Invoice creditNote = Invoice.builder()
+                .invoiceNumber(generateCreditNoteNumber())
+                .invoiceType(original.getInvoiceType())
+                .invoiceSubtype(original.getInvoiceSubtype())
+                .sellerNameAr(original.getSellerNameAr())
+                .sellerVatNumber(original.getSellerVatNumber())
+                .sellerCrNumber(original.getSellerCrNumber())
+                .sellerAddress(original.getSellerAddress())
+                .buyerName(original.getBuyerName())
+                .buyerVatNumber(original.getBuyerVatNumber())
+                .buyerAddress(original.getBuyerAddress())
+                .issueDatetime(Instant.now())
+                .subtotal(original.getSubtotal())
+                .discountAmount(original.getDiscountAmount())
+                .taxableAmount(original.getTaxableAmount())
+                .vatAmount(original.getVatAmount())
+                .totalAmount(original.getTotalAmount())
+                .creditNote(true)
+                .originalInvoiceId(original.getId())
+                .status(Invoice.InvoiceStatus.CONFIRMED)
+                .zatcaStatus(Invoice.ZatcaStatus.NOT_SUBMITTED)
+                .build();
+
+        // Copy items
+        AtomicInteger lineNum = new AtomicInteger(1);
+        for (InvoiceItem originalItem : original.getItems()) {
+            InvoiceItem item = InvoiceItem.builder()
+                    .invoice(creditNote)
+                    .lineNumber(lineNum.getAndIncrement())
+                    .descriptionAr(originalItem.getDescriptionAr())
+                    .quantity(originalItem.getQuantity())
+                    .unitPrice(originalItem.getUnitPrice())
+                    .discountPercent(originalItem.getDiscountPercent())
+                    .taxableAmount(originalItem.getTaxableAmount())
+                    .taxCategory(originalItem.getTaxCategory())
+                    .taxRate(originalItem.getTaxRate())
+                    .vatAmount(originalItem.getVatAmount())
+                    .totalAmount(originalItem.getTotalAmount())
+                    .build();
+            creditNote.getItems().add(item);
+        }
+
+        Invoice saved = invoiceRepository.save(creditNote);
+
+        // Post reversal journal entry
+        var journalEntry = invoiceJournalService.createReversalForCreditNote(saved);
+        saved.setJournalEntryId(journalEntry.getId());
+        saved = invoiceRepository.save(saved);
+
+        log.info("Credit note {} created for invoice {}", saved.getInvoiceNumber(), original.getInvoiceNumber());
+        return saved;
+    }
+
+    @Transactional
     public Invoice cancel(UUID invoiceId, String reason) {
         Invoice invoice = findById(invoiceId);
         if (invoice.getStatus() == Invoice.InvoiceStatus.CANCELLED) {
@@ -179,5 +245,11 @@ public class InvoiceService {
         int year = Year.now().getValue();
         long count = invoiceRepository.countByCurrentYear(year) + 1;
         return String.format("INV-%d-%06d", year, count);
+    }
+
+    private String generateCreditNoteNumber() {
+        int year = Year.now().getValue();
+        long count = invoiceRepository.countCreditNotesByCurrentYear(year) + 1;
+        return String.format("CN-%d-%06d", year, count);
     }
 }

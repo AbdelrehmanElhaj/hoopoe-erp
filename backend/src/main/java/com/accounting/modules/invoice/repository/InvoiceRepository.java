@@ -14,5 +14,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     @Query("SELECT COUNT(i) FROM Invoice i WHERE YEAR(i.issueDatetime) = :year")
     long countByCurrentYear(int year);
 
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.creditNote = true AND YEAR(i.issueDatetime) = :year")
+    long countCreditNotesByCurrentYear(int year);
+
     List<Invoice> findByZatcaStatus(Invoice.ZatcaStatus status);
 }
