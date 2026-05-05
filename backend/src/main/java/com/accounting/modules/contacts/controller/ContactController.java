@@ -29,7 +29,7 @@ public class ContactController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ContactResponse>>> findAll(
             @RequestParam(required = false) Contact.ContactType type,
-            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "") String search,
             @PageableDefault(size = 20) Pageable pageable) {
         Page<ContactResponse> page = contactRepository
                 .search(type, search, pageable)

@@ -117,7 +117,7 @@ public class JournalService {
 
     @Transactional(readOnly = true)
     public JournalEntry findById(UUID id) {
-        return journalRepository.findById(id)
+        return journalRepository.findByIdWithLines(id)
                 .orElseThrow(() -> new BusinessException("Journal entry not found", HttpStatus.NOT_FOUND));
     }
 

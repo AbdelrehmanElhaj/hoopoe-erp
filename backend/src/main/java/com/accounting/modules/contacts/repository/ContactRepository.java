@@ -17,10 +17,10 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
             SELECT c FROM Contact c
             WHERE c.active = true
               AND (:type IS NULL OR c.contactType = :type)
-              AND (:search IS NULL OR LOWER(c.nameAr) LIKE LOWER(CONCAT('%', :search, '%'))
-                                  OR LOWER(c.nameEn)  LIKE LOWER(CONCAT('%', :search, '%'))
-                                  OR c.vatNumber      LIKE CONCAT('%', :search, '%')
-                                  OR c.phone          LIKE CONCAT('%', :search, '%'))
+              AND (:search = '' OR LOWER(c.nameAr) LIKE LOWER(CONCAT('%', :search, '%'))
+                                OR LOWER(c.nameEn)  LIKE LOWER(CONCAT('%', :search, '%'))
+                                OR c.vatNumber      LIKE CONCAT('%', :search, '%')
+                                OR c.phone          LIKE CONCAT('%', :search, '%'))
             ORDER BY c.nameAr
             """)
     Page<Contact> search(
