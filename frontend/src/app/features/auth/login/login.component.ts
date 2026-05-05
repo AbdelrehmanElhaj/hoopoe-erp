@@ -1,13 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Card } from 'primeng/card';
+import { InputText } from 'primeng/inputtext';
+import { Password } from 'primeng/password';
+import { Button } from 'primeng/button';
+import { Toast } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -15,71 +14,81 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    MatCardModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSnackBarModule
+    Card, InputText, Password,
+    Button, Toast
   ],
   template: `
+    <p-toast position="top-center" />
+
     <div class="login-page">
       <div class="login-container">
 
+        <!-- Brand -->
         <div class="login-brand">
-          <mat-icon class="brand-icon">account_balance</mat-icon>
+          <div class="brand-icon-wrap">
+            <i class="pi pi-building-columns brand-icon"></i>
+          </div>
           <h1>النظام المحاسبي السعودي</h1>
           <p>نظام محاسبي متوافق مع هيئة الزكاة والضريبة والجمارك</p>
         </div>
 
-        <mat-card class="login-card">
-          <mat-card-content>
-            <h2>تسجيل الدخول</h2>
+        <!-- Card -->
+        <p-card styleClass="login-card">
+          <h2>تسجيل الدخول</h2>
 
-            <form [formGroup]="form" (ngSubmit)="submit()">
+          <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
 
-              <mat-form-field appearance="outline">
-                <mat-label>معرّف الشركة</mat-label>
-                <mat-icon matPrefix>business</mat-icon>
-                <input matInput formControlName="tenantId" placeholder="مثال: my-company" dir="ltr">
-                @if (form.get('tenantId')?.hasError('required')) {
-                  <mat-error>معرّف الشركة مطلوب</mat-error>
-                }
-              </mat-form-field>
+            <!-- Tenant -->
+            <div class="field">
+              <label for="tenantId">معرّف الشركة</label>
+              <div class="p-inputgroup">
+                <span class="p-inputgroup-addon"><i class="pi pi-building"></i></span>
+                <input pInputText id="tenantId" formControlName="tenantId"
+                       placeholder="مثال: al-nakheel" dir="ltr" />
+              </div>
+              @if (submitted() && form.get('tenantId')?.invalid) {
+                <small class="field-error">معرّف الشركة مطلوب</small>
+              }
+            </div>
 
-              <mat-form-field appearance="outline">
-                <mat-label>البريد الإلكتروني</mat-label>
-                <mat-icon matPrefix>email</mat-icon>
-                <input matInput type="email" formControlName="email" dir="ltr">
-                @if (form.get('email')?.hasError('required')) {
-                  <mat-error>البريد الإلكتروني مطلوب</mat-error>
-                }
-                @if (form.get('email')?.hasError('email')) {
-                  <mat-error>بريد إلكتروني غير صالح</mat-error>
-                }
-              </mat-form-field>
+            <!-- Email -->
+            <div class="field">
+              <label for="email">البريد الإلكتروني</label>
+              <div class="p-inputgroup">
+                <span class="p-inputgroup-addon"><i class="pi pi-envelope"></i></span>
+                <input pInputText id="email" type="email" formControlName="email" dir="ltr" />
+              </div>
+              @if (submitted() && form.get('email')?.invalid) {
+                <small class="field-error">أدخل بريدًا إلكترونيًا صالحًا</small>
+              }
+            </div>
 
-              <mat-form-field appearance="outline">
-                <mat-label>كلمة المرور</mat-label>
-                <mat-icon matPrefix>lock</mat-icon>
-                <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" dir="ltr">
-                <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())">
-                  <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                </button>
-                @if (form.get('password')?.hasError('required')) {
-                  <mat-error>كلمة المرور مطلوبة</mat-error>
-                }
-              </mat-form-field>
+            <!-- Password -->
+            <div class="field">
+              <label for="password">كلمة المرور</label>
+              <p-password
+                inputId="password"
+                formControlName="password"
+                [feedback]="false"
+                [toggleMask]="true"
+                styleClass="w-full"
+                inputStyleClass="w-full" />
+              @if (submitted() && form.get('password')?.invalid) {
+                <small class="field-error">كلمة المرور مطلوبة</small>
+              }
+            </div>
 
-              <button mat-flat-button color="primary" type="submit"
-                      [disabled]="form.invalid || loading()"
-                      class="submit-btn">
-                @if (loading()) {
-                  <mat-spinner diameter="20" />
-                } @else {
-                  <ng-container><mat-icon>login</mat-icon> دخول</ng-container>
-                }
-              </button>
+            <!-- Submit -->
+            <p-button
+              type="submit"
+              label="دخول"
+              icon="pi pi-sign-in"
+              iconPos="right"
+              styleClass="submit-btn"
+              [loading]="loading()" />
 
-            </form>
-          </mat-card-content>
-        </mat-card>
+          </form>
+        </p-card>
 
       </div>
     </div>
@@ -90,55 +99,99 @@ import { AuthService } from '../../../core/services/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+      background: linear-gradient(135deg, #0d1757 0%, #1a237e 50%, #283593 100%);
+      padding: 16px;
     }
 
     .login-container {
       width: 100%;
       max-width: 440px;
-      padding: 16px;
     }
 
+    /* Brand */
     .login-brand {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       color: white;
-      .brand-icon {
-        font-size: 56px;
-        height: 56px;
-        width: 56px;
-        color: #ffd740;
+
+      .brand-icon-wrap {
+        width: 72px;
+        height: 72px;
+        background: rgba(255,213,79,.2);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
       }
-      h1 { margin: 12px 0 8px; font-size: 1.4rem; font-weight: 700; }
-      p { margin: 0; opacity: .8; font-size: 0.9rem; }
+
+      .brand-icon {
+        font-size: 2.2rem;
+        color: #ffd54f;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.35rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.88rem;
+        opacity: 0.75;
+      }
     }
 
-    .login-card {
-      border-radius: 16px !important;
-      padding: 8px;
+    /* Card overrides */
+    ::ng-deep .login-card {
+      border-radius: 20px !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3) !important;
+
+      .p-card-body { padding: 32px; }
     }
 
     h2 {
       margin: 0 0 24px;
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.2rem;
+      font-weight: 700;
       color: #1a237e;
+      text-align: center;
     }
 
-    form {
+    .login-form {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 18px;
     }
 
-    .submit-btn {
-      height: 48px;
-      font-size: 1rem;
-      margin-top: 8px;
+    .field {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      gap: 6px;
+
+      label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #444;
+      }
+    }
+
+    .field-error {
+      color: #c62828;
+      font-size: 0.8rem;
+    }
+
+    /* PrimeNG overrides */
+    ::ng-deep .p-inputgroup input { direction: ltr; }
+    ::ng-deep .p-password { width: 100%; }
+    ::ng-deep .p-password input { width: 100%; direction: ltr; }
+
+    ::ng-deep .submit-btn {
+      width: 100% !important;
+      height: 48px !important;
+      font-size: 1rem !important;
       justify-content: center;
-      gap: 8px;
     }
   `]
 })
@@ -146,10 +199,11 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(MessageService);
 
   showPassword = signal(false);
   loading = signal(false);
+  submitted = signal(false);
 
   form = this.fb.group({
     tenantId: ['', Validators.required],
@@ -158,6 +212,7 @@ export class LoginComponent {
   });
 
   submit(): void {
+    this.submitted.set(true);
     if (this.form.invalid) return;
 
     const { tenantId, email, password } = this.form.getRawValue();
@@ -168,7 +223,7 @@ export class LoginComponent {
       error: (err) => {
         this.loading.set(false);
         const msg = err.error?.message ?? 'بيانات الدخول غير صحيحة';
-        this.snackBar.open(msg, 'إغلاق', { duration: 4000, panelClass: 'error-snack' });
+        this.toast.add({ severity: 'error', summary: 'خطأ', detail: msg, life: 4000 });
       }
     });
   }

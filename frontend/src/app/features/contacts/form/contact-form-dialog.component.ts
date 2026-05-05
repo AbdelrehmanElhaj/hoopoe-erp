@@ -1,129 +1,113 @@
-import { Component, inject, Inject } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Button } from 'primeng/button';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
+import { Textarea } from 'primeng/textarea';
 import { ContactService, Contact } from '../../../core/services/contact.service';
 
 @Component({
-  selector: 'app-contact-form-dialog',
+  selector: 'app-contact-form',
   standalone: true,
-  imports: [
-    ReactiveFormsModule, MatDialogModule, MatButtonModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatIconModule, MatProgressSpinnerModule
-  ],
+  imports: [ReactiveFormsModule, Button, InputText, Select, Textarea],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'تعديل جهة الاتصال' : 'إضافة جهة اتصال جديدة' }}</h2>
+    <form [formGroup]="form" (ngSubmit)="save()" class="contact-form" dir="rtl">
 
-    <mat-dialog-content>
-      <form [formGroup]="form" class="contact-form">
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>الاسم بالعربي *</mat-label>
-            <input matInput formControlName="nameAr" dir="rtl">
-            @if (form.get('nameAr')?.hasError('required') && form.get('nameAr')?.touched) {
-              <mat-error>الاسم بالعربي مطلوب</mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>الاسم بالإنجليزي</mat-label>
-            <input matInput formControlName="nameEn">
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>النوع *</mat-label>
-            <mat-select formControlName="contactType">
-              <mat-option value="CUSTOMER">عميل</mat-option>
-              <mat-option value="SUPPLIER">مورد</mat-option>
-              <mat-option value="BOTH">عميل ومورد</mat-option>
-            </mat-select>
-            @if (form.get('contactType')?.hasError('required') && form.get('contactType')?.touched) {
-              <mat-error>النوع مطلوب</mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        <div class="form-row two-cols">
-          <mat-form-field appearance="outline">
-            <mat-label>الرقم الضريبي</mat-label>
-            <input matInput formControlName="vatNumber" maxlength="20">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>السجل التجاري</mat-label>
-            <input matInput formControlName="crNumber" maxlength="20">
-          </mat-form-field>
-        </div>
-
-        <div class="form-row two-cols">
-          <mat-form-field appearance="outline">
-            <mat-label>الهاتف</mat-label>
-            <mat-icon matPrefix>phone</mat-icon>
-            <input matInput formControlName="phone" maxlength="30">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>البريد الإلكتروني</mat-label>
-            <mat-icon matPrefix>email</mat-icon>
-            <input matInput formControlName="email" type="email" maxlength="150">
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>العنوان</mat-label>
-            <input matInput formControlName="address" maxlength="500" dir="rtl">
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>ملاحظات</mat-label>
-            <textarea matInput formControlName="notes" rows="3" maxlength="1000" dir="rtl"></textarea>
-          </mat-form-field>
-        </div>
-
-      </form>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>إلغاء</button>
-      <button mat-flat-button color="primary" (click)="save()" [disabled]="saving || form.invalid">
-        @if (saving) {
-          <mat-spinner diameter="18" />
-        } @else {
-          <mat-icon>save</mat-icon>
+      <div class="field">
+        <label>الاسم بالعربي <span class="req">*</span></label>
+        <input pInputText formControlName="nameAr" class="w-full" dir="rtl" />
+        @if (form.get('nameAr')?.invalid && form.get('nameAr')?.touched) {
+          <small class="field-error">الاسم بالعربي مطلوب</small>
         }
-        حفظ
-      </button>
-    </mat-dialog-actions>
+      </div>
+
+      <div class="field">
+        <label>الاسم بالإنجليزي</label>
+        <input pInputText formControlName="nameEn" class="w-full" dir="ltr" />
+      </div>
+
+      <div class="field">
+        <label>النوع <span class="req">*</span></label>
+        <p-select formControlName="contactType"
+                  [options]="typeOptions"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر النوع"
+                  styleClass="w-full" />
+        @if (form.get('contactType')?.invalid && form.get('contactType')?.touched) {
+          <small class="field-error">النوع مطلوب</small>
+        }
+      </div>
+
+      <div class="two-cols">
+        <div class="field">
+          <label>الرقم الضريبي</label>
+          <input pInputText formControlName="vatNumber" class="w-full" dir="ltr" maxlength="20" />
+        </div>
+        <div class="field">
+          <label>السجل التجاري</label>
+          <input pInputText formControlName="crNumber" class="w-full" dir="ltr" maxlength="20" />
+        </div>
+      </div>
+
+      <div class="two-cols">
+        <div class="field">
+          <label>الهاتف</label>
+          <input pInputText formControlName="phone" class="w-full" dir="ltr" maxlength="30" />
+        </div>
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input pInputText formControlName="email" type="email" class="w-full" dir="ltr" maxlength="150" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>العنوان</label>
+        <input pInputText formControlName="address" class="w-full" dir="rtl" maxlength="500" />
+      </div>
+
+      <div class="field">
+        <label>ملاحظات</label>
+        <textarea pTextarea formControlName="notes" rows="3" class="w-full" dir="rtl" maxlength="1000"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <p-button label="إلغاء" severity="secondary" [outlined]="true"
+                  type="button" (onClick)="cancelled.emit()" />
+        <p-button [label]="data() ? 'حفظ التعديلات' : 'إضافة'"
+                  icon="pi pi-save" iconPos="right"
+                  type="submit" [loading]="saving"
+                  [disabled]="form.invalid" />
+      </div>
+
+    </form>
   `,
   styles: [`
-    .contact-form { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; }
-    .form-row { width: 100%; }
-    .full-width { width: 100%; }
+    .contact-form { display: flex; flex-direction: column; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 0.85rem; font-weight: 600; color: #444; }
+    .req { color: #c62828; }
+    .field-error { color: #c62828; font-size: 0.78rem; }
     .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    mat-spinner { display: inline-block; }
-    mat-dialog-content { min-width: 480px; }
+    .w-full { width: 100%; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 8px; }
+    ::ng-deep textarea.w-full { width: 100% !important; }
   `]
 })
-export class ContactFormDialogComponent {
+export class ContactFormComponent {
   private fb = inject(FormBuilder);
-  private contactService = inject(ContactService);
-  dialogRef = inject(MatDialogRef<ContactFormDialogComponent>);
+  private svc = inject(ContactService);
+
+  data = input<Contact | null>(null);
+  saved = output<Contact>();
+  cancelled = output<void>();
 
   saving = false;
+
+  typeOptions = [
+    { label: 'عميل',       value: 'CUSTOMER' },
+    { label: 'مورد',       value: 'SUPPLIER' },
+    { label: 'عميل ومورد', value: 'BOTH' },
+  ];
 
   form = this.fb.group({
     nameAr:      ['', Validators.required],
@@ -137,18 +121,19 @@ export class ContactFormDialogComponent {
     notes:       [''],
   });
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: Contact | null) {
-    if (data) {
+  ngOnInit(): void {
+    const d = this.data();
+    if (d) {
       this.form.patchValue({
-        nameAr:      data.nameAr,
-        nameEn:      data.nameEn ?? '',
-        contactType: data.contactType,
-        vatNumber:   data.vatNumber ?? '',
-        crNumber:    data.crNumber ?? '',
-        phone:       data.phone ?? '',
-        email:       data.email ?? '',
-        address:     data.address ?? '',
-        notes:       data.notes ?? '',
+        nameAr:      d.nameAr,
+        nameEn:      d.nameEn ?? '',
+        contactType: d.contactType,
+        vatNumber:   d.vatNumber ?? '',
+        crNumber:    d.crNumber ?? '',
+        phone:       d.phone ?? '',
+        email:       d.email ?? '',
+        address:     d.address ?? '',
+        notes:       d.notes ?? '',
       });
     }
   }
@@ -156,25 +141,25 @@ export class ContactFormDialogComponent {
   save(): void {
     if (this.form.invalid) return;
     this.saving = true;
-    const val = this.form.value;
+    const v = this.form.value;
     const req = {
-      nameAr:      val.nameAr!,
-      nameEn:      val.nameEn || undefined,
-      contactType: val.contactType!,
-      vatNumber:   val.vatNumber || undefined,
-      crNumber:    val.crNumber || undefined,
-      phone:       val.phone || undefined,
-      email:       val.email || undefined,
-      address:     val.address || undefined,
-      notes:       val.notes || undefined,
+      nameAr:      v.nameAr!,
+      nameEn:      v.nameEn || undefined,
+      contactType: v.contactType!,
+      vatNumber:   v.vatNumber || undefined,
+      crNumber:    v.crNumber || undefined,
+      phone:       v.phone || undefined,
+      email:       v.email || undefined,
+      address:     v.address || undefined,
+      notes:       v.notes || undefined,
     };
 
-    const call = this.data
-      ? this.contactService.update(this.data.id, req)
-      : this.contactService.create(req);
+    const call = this.data()
+      ? this.svc.update(this.data()!.id, req)
+      : this.svc.create(req);
 
     call.subscribe({
-      next: res => { this.saving = false; this.dialogRef.close(res.data); },
+      next: res => { this.saving = false; this.saved.emit(res.data); },
       error: () => { this.saving = false; }
     });
   }

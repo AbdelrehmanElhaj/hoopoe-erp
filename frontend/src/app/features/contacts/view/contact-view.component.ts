@@ -1,228 +1,274 @@
 import { Component, inject, Input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DatePipe } from '@angular/common';
+import { Card } from 'primeng/card';
+import { Button } from 'primeng/button';
+import { Tag } from 'primeng/tag';
+import { Dialog } from 'primeng/dialog';
+import { Skeleton } from 'primeng/skeleton';
+import { MessageService } from 'primeng/api';
 import { ContactService, Contact } from '../../../core/services/contact.service';
-import { ContactFormDialogComponent } from '../form/contact-form-dialog.component';
+import { ContactFormComponent } from '../form/contact-form-dialog.component';
 
 @Component({
   selector: 'app-contact-view',
   standalone: true,
-  imports: [
-    RouterLink, MatCardModule, MatButtonModule, MatIconModule,
-    MatChipsModule, MatProgressBarModule, MatDividerModule,
-    MatSnackBarModule, MatDialogModule, DatePipe
-  ],
+  imports: [RouterLink, DatePipe, Card, Button, Tag, Dialog, Skeleton, ContactFormComponent],
   template: `
-    <div class="page-container">
+    <div class="page-wrap" dir="rtl">
 
       @if (loading()) {
-        <mat-progress-bar mode="indeterminate" />
+        <div class="skeleton-wrap">
+          <p-skeleton height="40px" width="300px" borderRadius="8px" />
+          <div class="skel-grid">
+            <p-skeleton height="200px" borderRadius="12px" />
+            <p-skeleton height="200px" borderRadius="12px" />
+          </div>
+        </div>
       }
 
       @if (contact(); as c) {
+
+        <!-- Header -->
         <div class="page-header">
-          <div class="header-left">
-            <button mat-icon-button routerLink="/contacts">
-              <mat-icon>arrow_back</mat-icon>
-            </button>
-            <h1>{{ c.nameAr }}</h1>
-            <span class="type-chip" [class]="'type-' + c.contactType.toLowerCase()">
-              {{ typeLabel(c.contactType) }}
-            </span>
+          <div class="header-start">
+            <p-button icon="pi pi-arrow-right" [text]="true" [rounded]="true"
+                      severity="secondary" routerLink="/contacts" />
+            <h1 class="page-title">{{ c.nameAr }}</h1>
+            <p-tag [value]="typeLabel(c.contactType)"
+                   [severity]="typeSeverity(c.contactType)"
+                   [rounded]="true" />
             @if (!c.active) {
               <span class="inactive-badge">غير نشط</span>
             }
           </div>
           <div class="header-actions">
-            <button mat-stroked-button (click)="openEdit(c)">
-              <mat-icon>edit</mat-icon>
-              تعديل
-            </button>
+            <p-button label="تعديل" icon="pi pi-pencil" iconPos="right"
+                      [outlined]="true" (onClick)="editVisible = true" />
             @if (c.active) {
-              <button mat-stroked-button color="warn" (click)="deactivate(c)">
-                <mat-icon>block</mat-icon>
-                تعطيل
-              </button>
+              <p-button label="تعطيل" icon="pi pi-ban" iconPos="right"
+                        severity="danger" [outlined]="true"
+                        (onClick)="deactivate(c)" />
             }
           </div>
         </div>
 
+        <!-- Cards grid -->
         <div class="cards-grid">
 
-          <!-- Basic Info -->
-          <mat-card>
-            <mat-card-header>
-              <mat-icon mat-card-avatar>person</mat-icon>
-              <mat-card-title>البيانات الأساسية</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <dl class="info-list">
-                @if (c.nameEn) {
-                  <div class="info-row">
-                    <dt>الاسم بالإنجليزي</dt>
-                    <dd>{{ c.nameEn }}</dd>
-                  </div>
-                }
-                @if (c.vatNumber) {
-                  <div class="info-row">
-                    <dt>الرقم الضريبي</dt>
-                    <dd class="mono">{{ c.vatNumber }}</dd>
-                  </div>
-                }
-                @if (c.crNumber) {
-                  <div class="info-row">
-                    <dt>السجل التجاري</dt>
-                    <dd class="mono">{{ c.crNumber }}</dd>
-                  </div>
-                }
-                @if (c.address) {
-                  <div class="info-row">
-                    <dt>العنوان</dt>
-                    <dd>{{ c.address }}</dd>
-                  </div>
-                }
-              </dl>
-            </mat-card-content>
-          </mat-card>
+          <!-- Basic info -->
+          <p-card>
+            <ng-template pTemplate="header">
+              <div class="card-head">
+                <div class="card-head-icon blue"><i class="pi pi-user"></i></div>
+                <span class="card-head-title">البيانات الأساسية</span>
+              </div>
+            </ng-template>
+            <dl class="info-list">
+              @if (c.nameEn) {
+                <div class="info-row">
+                  <dt>الاسم بالإنجليزي</dt><dd>{{ c.nameEn }}</dd>
+                </div>
+              }
+              @if (c.vatNumber) {
+                <div class="info-row">
+                  <dt>الرقم الضريبي</dt><dd class="mono">{{ c.vatNumber }}</dd>
+                </div>
+              }
+              @if (c.crNumber) {
+                <div class="info-row">
+                  <dt>السجل التجاري</dt><dd class="mono">{{ c.crNumber }}</dd>
+                </div>
+              }
+              @if (c.address) {
+                <div class="info-row">
+                  <dt>العنوان</dt><dd>{{ c.address }}</dd>
+                </div>
+              }
+              @if (!c.nameEn && !c.vatNumber && !c.crNumber && !c.address) {
+                <p class="no-data">لا توجد بيانات إضافية</p>
+              }
+            </dl>
+          </p-card>
 
-          <!-- Contact Info -->
-          <mat-card>
-            <mat-card-header>
-              <mat-icon mat-card-avatar>contact_phone</mat-icon>
-              <mat-card-title>بيانات التواصل</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <dl class="info-list">
-                @if (c.phone) {
-                  <div class="info-row">
-                    <dt><mat-icon class="info-icon">phone</mat-icon> الهاتف</dt>
-                    <dd><a [href]="'tel:' + c.phone">{{ c.phone }}</a></dd>
-                  </div>
-                }
-                @if (c.email) {
-                  <div class="info-row">
-                    <dt><mat-icon class="info-icon">email</mat-icon> البريد الإلكتروني</dt>
-                    <dd><a [href]="'mailto:' + c.email">{{ c.email }}</a></dd>
-                  </div>
-                }
-                @if (!c.phone && !c.email) {
-                  <p class="no-data">لا توجد بيانات تواصل</p>
-                }
-              </dl>
-            </mat-card-content>
-          </mat-card>
+          <!-- Contact info -->
+          <p-card>
+            <ng-template pTemplate="header">
+              <div class="card-head">
+                <div class="card-head-icon green"><i class="pi pi-phone"></i></div>
+                <span class="card-head-title">بيانات التواصل</span>
+              </div>
+            </ng-template>
+            <dl class="info-list">
+              @if (c.phone) {
+                <div class="info-row">
+                  <dt><i class="pi pi-phone info-icon"></i> الهاتف</dt>
+                  <dd><a [href]="'tel:' + c.phone" class="contact-link">{{ c.phone }}</a></dd>
+                </div>
+              }
+              @if (c.email) {
+                <div class="info-row">
+                  <dt><i class="pi pi-envelope info-icon"></i> البريد الإلكتروني</dt>
+                  <dd><a [href]="'mailto:' + c.email" class="contact-link">{{ c.email }}</a></dd>
+                </div>
+              }
+              @if (!c.phone && !c.email) {
+                <p class="no-data">لا توجد بيانات تواصل</p>
+              }
+            </dl>
+          </p-card>
 
           <!-- Notes -->
           @if (c.notes) {
-            <mat-card class="notes-card">
-              <mat-card-header>
-                <mat-icon mat-card-avatar>notes</mat-icon>
-                <mat-card-title>ملاحظات</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <p class="notes-text">{{ c.notes }}</p>
-              </mat-card-content>
-            </mat-card>
+            <p-card styleClass="full-width-card">
+              <ng-template pTemplate="header">
+                <div class="card-head">
+                  <div class="card-head-icon purple"><i class="pi pi-file-edit"></i></div>
+                  <span class="card-head-title">ملاحظات</span>
+                </div>
+              </ng-template>
+              <p class="notes-text">{{ c.notes }}</p>
+            </p-card>
           }
 
           <!-- Meta -->
-          <mat-card class="meta-card">
-            <mat-card-header>
-              <mat-icon mat-card-avatar>info_outline</mat-icon>
-              <mat-card-title>معلومات النظام</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <dl class="info-list">
+          <p-card styleClass="full-width-card">
+            <ng-template pTemplate="header">
+              <div class="card-head">
+                <div class="card-head-icon grey"><i class="pi pi-info-circle"></i></div>
+                <span class="card-head-title">معلومات النظام</span>
+              </div>
+            </ng-template>
+            <dl class="info-list">
+              <div class="info-row">
+                <dt>تاريخ الإضافة</dt>
+                <dd class="mono">{{ c.createdAt | date:'yyyy/MM/dd HH:mm' }}</dd>
+              </div>
+              @if (c.updatedAt) {
                 <div class="info-row">
-                  <dt>تاريخ الإضافة</dt>
-                  <dd>{{ c.createdAt | date:'yyyy/MM/dd HH:mm' }}</dd>
+                  <dt>آخر تعديل</dt>
+                  <dd class="mono">{{ c.updatedAt | date:'yyyy/MM/dd HH:mm' }}</dd>
                 </div>
-                @if (c.updatedAt) {
-                  <div class="info-row">
-                    <dt>آخر تعديل</dt>
-                    <dd>{{ c.updatedAt | date:'yyyy/MM/dd HH:mm' }}</dd>
-                  </div>
-                }
-              </dl>
-            </mat-card-content>
-          </mat-card>
+              }
+            </dl>
+          </p-card>
 
         </div>
       }
     </div>
+
+    <!-- Edit dialog -->
+    <p-dialog [(visible)]="editVisible"
+              header="تعديل جهة الاتصال"
+              [modal]="true" [draggable]="false"
+              [style]="{ width: '560px' }"
+              [contentStyle]="{ padding: '20px' }"
+              dir="rtl">
+      @if (editVisible && contact()) {
+        <app-contact-form
+          [data]="contact()"
+          (saved)="onEdited($event)"
+          (cancelled)="editVisible = false" />
+      }
+    </p-dialog>
   `,
   styles: [`
+    .page-wrap { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+    .skeleton-wrap { display: flex; flex-direction: column; gap: 16px; }
+    .skel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
     .page-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .header-start { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .page-title { margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e; }
     .header-actions { display: flex; gap: 8px; }
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-    .notes-card, .meta-card { grid-column: 1 / -1; }
-    .type-chip { padding: 4px 12px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-    .type-customer { background: #e8f5e9; color: #2e7d32; }
-    .type-supplier { background: #fff3e0; color: #e65100; }
-    .type-both     { background: #e3f2fd; color: #1565c0; }
-    .inactive-badge { background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; }
-    .info-list { display: flex; flex-direction: column; gap: 12px; margin: 16px 0 0; }
-    .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-    .info-row dt { color: #666; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .info-row dd { font-weight: 500; text-align: left; margin: 0; }
-    .info-icon { font-size: 16px; width: 16px; height: 16px; vertical-align: middle; }
+
+    .inactive-badge {
+      background: #ffebee; color: #c62828;
+      padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    ::ng-deep .full-width-card { grid-column: 1 / -1; }
+
+    /* Card header */
+    .card-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 0;
+    }
+    .card-head-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      i { font-size: 0.95rem; color: white; }
+      &.blue   { background: #1a237e; }
+      &.green  { background: #1b5e20; }
+      &.purple { background: #4a148c; }
+      &.grey   { background: #546e7a; }
+    }
+    .card-head-title { font-weight: 700; font-size: 0.92rem; color: #1a237e; }
+
+    /* Info list */
+    .info-list {
+      display: flex; flex-direction: column;
+      gap: 10px; margin: 12px 0 0; padding: 0;
+    }
+    .info-row {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: 16px;
+      padding-bottom: 10px; border-bottom: 1px solid #f5f5f5;
+      &:last-child { border-bottom: none; padding-bottom: 0; }
+    }
+    dt { color: #78909c; font-size: 0.83rem; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    dd { font-weight: 600; color: #1a1a2e; margin: 0; text-align: left; }
+
+    .info-icon { font-size: 0.85rem; color: #90a4ae; }
     .mono { font-family: monospace; }
-    .no-data { color: #999; font-style: italic; margin: 16px 0 0; }
-    .notes-text { line-height: 1.8; color: #333; white-space: pre-wrap; }
-    a { color: #1a237e; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    .contact-link { color: #1a237e; text-decoration: none; &:hover { text-decoration: underline; } }
+    .no-data { color: #b0bec5; font-style: italic; margin: 8px 0 0; font-size: 0.88rem; }
+    .notes-text { line-height: 1.8; color: #333; white-space: pre-wrap; margin: 0; }
   `]
 })
 export class ContactViewComponent implements OnInit {
   @Input() id!: string;
 
-  private contactService = inject(ContactService);
-  private dialog = inject(MatDialog);
-  private snack = inject(MatSnackBar);
-  private router = inject(Router);
+  private svc     = inject(ContactService);
+  private toast   = inject(MessageService);
+  private router  = inject(Router);
 
-  contact = signal<Contact | null>(null);
-  loading = signal(true);
+  contact  = signal<Contact | null>(null);
+  loading  = signal(true);
+  editVisible = false;
 
-  ngOnInit(): void {
-    this.load();
-  }
+  ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
-    this.contactService.findById(this.id).subscribe({
+    this.svc.findById(this.id).subscribe({
       next: res => { this.contact.set(res.data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
   }
 
-  openEdit(c: Contact): void {
-    const ref = this.dialog.open(ContactFormDialogComponent, { width: '560px', data: c });
-    ref.afterClosed().subscribe(updated => {
-      if (updated) {
-        this.snack.open('تم تحديث جهة الاتصال', 'إغلاق', { duration: 3000 });
-        this.load();
-      }
-    });
+  onEdited(updated: Contact): void {
+    this.editVisible = false;
+    this.toast.add({ severity: 'success', summary: 'تم', detail: 'تم تحديث جهة الاتصال', life: 3000 });
+    this.load();
   }
 
   deactivate(c: Contact): void {
     if (!confirm(`هل تريد تعطيل "${c.nameAr}"؟`)) return;
-    this.contactService.deactivate(c.id).subscribe({
+    this.svc.deactivate(c.id).subscribe({
       next: () => {
-        this.snack.open('تم تعطيل جهة الاتصال', 'إغلاق', { duration: 3000 });
+        this.toast.add({ severity: 'warn', summary: 'تم', detail: 'تم تعطيل جهة الاتصال', life: 3000 });
         this.router.navigate(['/contacts']);
       }
     });
@@ -230,5 +276,9 @@ export class ContactViewComponent implements OnInit {
 
   typeLabel(t: string): string {
     return ({ CUSTOMER: 'عميل', SUPPLIER: 'مورد', BOTH: 'عميل ومورد' } as Record<string, string>)[t] ?? t;
+  }
+
+  typeSeverity(t: string): 'success' | 'warn' | 'info' {
+    return ({ CUSTOMER: 'success', SUPPLIER: 'warn', BOTH: 'info' } as Record<string, any>)[t] ?? 'info';
   }
 }

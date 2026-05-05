@@ -1,11 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDividerModule } from '@angular/material/divider';
+import { Card } from 'primeng/card';
+import { Button } from 'primeng/button';
+import { Tag } from 'primeng/tag';
+import { Skeleton } from 'primeng/skeleton';
+import { Divider } from 'primeng/divider';
 import { DashboardService, DashboardData } from '../../core/services/dashboard.service';
 
 @Component({
@@ -13,305 +13,430 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
   standalone: true,
   imports: [
     RouterLink, DecimalPipe,
-    MatCardModule, MatButtonModule, MatIconModule,
-    MatProgressBarModule, MatDividerModule
+    Card, Button, Tag, Skeleton, Divider
   ],
   template: `
-    <div class="page-container" dir="rtl">
-      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <div class="dash-page" dir="rtl">
+
+      @if (loading()) {
+        <div class="kpi-grid">
+          @for (_ of [1,2,3,4]; track _) {
+            <p-skeleton height="100px" borderRadius="12px" />
+          }
+        </div>
+      }
 
       @if (data(); as d) {
 
         <!-- Header -->
-        <div class="page-header">
+        <div class="dash-header">
           <div>
-            <h1>لوحة التحكم</h1>
-            <p class="sub">نظرة عامة على النشاط المحاسبي</p>
+            <h1 class="dash-title">لوحة التحكم</h1>
+            <p class="dash-sub">نظرة عامة على النشاط المحاسبي</p>
           </div>
           <div class="header-actions">
-            <a mat-flat-button color="primary" routerLink="/invoices/new">
-              <mat-icon>add</mat-icon> فاتورة جديدة
-            </a>
-            <a mat-stroked-button routerLink="/journal/new">
-              <mat-icon>add</mat-icon> قيد جديد
-            </a>
+            <p-button label="فاتورة جديدة" icon="pi pi-plus" iconPos="right"
+                      severity="contrast" [routerLink]="['/invoices/new']" />
+            <p-button label="قيد جديد" icon="pi pi-plus" iconPos="right"
+                      [outlined]="true" [routerLink]="['/journal/new']" />
           </div>
         </div>
 
-        <!-- Revenue KPIs -->
+        <!-- KPI cards -->
         <div class="kpi-grid">
-          <mat-card class="kpi-card accent-blue">
-            <mat-card-content>
-              <div class="kpi-icon"><mat-icon>trending_up</mat-icon></div>
-              <div class="kpi-body">
-                <div class="kpi-label">إيرادات الشهر</div>
-                <div class="kpi-value">{{ d.invoiceStats.monthRevenue | number:'1.2-2' }}</div>
-                <div class="kpi-sub">ر.س (صافي قبل الضريبة)</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
 
-          <mat-card class="kpi-card accent-green">
-            <mat-card-content>
-              <div class="kpi-icon"><mat-icon>receipt_long</mat-icon></div>
-              <div class="kpi-body">
-                <div class="kpi-label">فواتير الشهر</div>
-                <div class="kpi-value">{{ d.invoiceStats.monthCount }}</div>
-                <div class="kpi-sub">من إجمالي {{ d.invoiceStats.totalCount }} فاتورة</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="pi pi-arrow-up-right"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-label">إيرادات الشهر</div>
+              <div class="kpi-value">{{ d.invoiceStats.monthRevenue | number:'1.2-2' }}</div>
+              <div class="kpi-sub">ر.س (صافي قبل الضريبة)</div>
+            </div>
+          </div>
 
-          <mat-card class="kpi-card accent-orange">
-            <mat-card-content>
-              <div class="kpi-icon"><mat-icon>account_balance</mat-icon></div>
-              <div class="kpi-body">
-                <div class="kpi-label">ضريبة القيمة المضافة (الشهر)</div>
-                <div class="kpi-value">{{ d.invoiceStats.monthVat | number:'1.2-2' }}</div>
-                <div class="kpi-sub">ر.س · إجمالي {{ d.invoiceStats.totalVat | number:'1.2-2' }} ر.س</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="pi pi-file-check"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-label">فواتير الشهر</div>
+              <div class="kpi-value">{{ d.invoiceStats.monthCount }}</div>
+              <div class="kpi-sub">من إجمالي {{ d.invoiceStats.totalCount }} فاتورة</div>
+            </div>
+          </div>
 
-          <mat-card class="kpi-card accent-purple">
-            <mat-card-content>
-              <div class="kpi-icon"><mat-icon>book</mat-icon></div>
-              <div class="kpi-body">
-                <div class="kpi-label">القيود اليومية</div>
-                <div class="kpi-value">{{ d.journalStats.totalCount }}</div>
-                <div class="kpi-sub">{{ d.journalStats.postedCount }} مرحَّل · {{ d.journalStats.draftCount }} مسودة</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          <div class="kpi-card kpi-orange">
+            <div class="kpi-icon"><i class="pi pi-percentage"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-label">ضريبة القيمة المضافة</div>
+              <div class="kpi-value">{{ d.invoiceStats.monthVat | number:'1.2-2' }}</div>
+              <div class="kpi-sub">ر.س الشهر الحالي</div>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="pi pi-book"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-label">القيود اليومية</div>
+              <div class="kpi-value">{{ d.journalStats.totalCount }}</div>
+              <div class="kpi-sub">{{ d.journalStats.postedCount }} مرحَّل · {{ d.journalStats.draftCount }} مسودة</div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Invoice status + ZATCA status -->
+        <!-- Status cards row -->
         <div class="mid-grid">
 
-          <!-- Invoice status breakdown -->
-          <mat-card>
-            <mat-card-header>
-              <mat-icon mat-card-avatar class="card-icon blue">receipt_long</mat-icon>
-              <mat-card-title>حالة الفواتير</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-grey"></span>مسودة</span>
-                <span class="stat-value">{{ d.invoiceStats.draftCount }}</span>
+          <!-- Invoice status -->
+          <p-card>
+            <ng-template pTemplate="header">
+              <div class="card-head">
+                <div class="card-head-icon blue"><i class="pi pi-file-check"></i></div>
+                <div>
+                  <div class="card-head-title">حالة الفواتير</div>
+                </div>
               </div>
-              <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-green"></span>مؤكدة</span>
-                <span class="stat-value">{{ d.invoiceStats.confirmedCount }}</span>
-              </div>
-              <mat-divider class="divider" />
-              <div class="stat-row total-row">
-                <span class="stat-label">الإجمالي</span>
-                <span class="stat-value">{{ d.invoiceStats.totalCount }}</span>
-              </div>
-            </mat-card-content>
-            <mat-card-actions>
-              <a mat-button routerLink="/invoices">عرض كل الفواتير</a>
-            </mat-card-actions>
-          </mat-card>
+            </ng-template>
 
-          <!-- ZATCA status breakdown -->
-          <mat-card>
-            <mat-card-header>
-              <mat-icon mat-card-avatar class="card-icon green">qr_code_2</mat-icon>
-              <mat-card-title>حالة ZATCA</mat-card-title>
-              <mat-card-subtitle>الفواتير المؤكدة فقط</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
+            <div class="stat-list">
               <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-grey"></span>لم ترسل</span>
-                <span class="stat-value">{{ d.zatcaStats.notSubmitted }}</span>
+                <span><span class="dot dot-grey"></span>مسودة</span>
+                <strong>{{ d.invoiceStats.draftCount }}</strong>
               </div>
               <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-yellow"></span>قيد الإرسال</span>
-                <span class="stat-value">{{ d.zatcaStats.pending }}</span>
+                <span><span class="dot dot-green"></span>مؤكدة</span>
+                <strong>{{ d.invoiceStats.confirmedCount }}</strong>
+              </div>
+              <p-divider />
+              <div class="stat-row total">
+                <span>الإجمالي</span>
+                <strong>{{ d.invoiceStats.totalCount }}</strong>
+              </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+              <p-button label="عرض كل الفواتير" [link]="true" icon="pi pi-arrow-left"
+                        iconPos="left" [routerLink]="['/invoices']" />
+            </ng-template>
+          </p-card>
+
+          <!-- ZATCA status -->
+          <p-card>
+            <ng-template pTemplate="header">
+              <div class="card-head">
+                <div class="card-head-icon green"><i class="pi pi-qrcode"></i></div>
+                <div>
+                  <div class="card-head-title">حالة ZATCA</div>
+                  <div class="card-head-sub">الفواتير المؤكدة فقط</div>
+                </div>
+              </div>
+            </ng-template>
+
+            <div class="stat-list">
+              <div class="stat-row">
+                <span><span class="dot dot-grey"></span>لم ترسل</span>
+                <strong>{{ d.zatcaStats.notSubmitted }}</strong>
               </div>
               <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-green"></span>مُخلَّصة</span>
-                <span class="stat-value">{{ d.zatcaStats.cleared }}</span>
+                <span><span class="dot dot-yellow"></span>قيد الإرسال</span>
+                <strong>{{ d.zatcaStats.pending }}</strong>
               </div>
               <div class="stat-row">
-                <span class="stat-label"><span class="dot dot-blue"></span>مُبلَّغ عنها</span>
-                <span class="stat-value">{{ d.zatcaStats.reported }}</span>
+                <span><span class="dot dot-green"></span>مُخلَّصة</span>
+                <strong>{{ d.zatcaStats.cleared }}</strong>
+              </div>
+              <div class="stat-row">
+                <span><span class="dot dot-blue"></span>مُبلَّغ عنها</span>
+                <strong>{{ d.zatcaStats.reported }}</strong>
               </div>
               @if (d.zatcaStats.rejected > 0) {
-                <div class="stat-row">
-                  <span class="stat-label"><span class="dot dot-red"></span>مرفوضة</span>
-                  <span class="stat-value warn">{{ d.zatcaStats.rejected }}</span>
+                <div class="stat-row warn">
+                  <span><span class="dot dot-red"></span>مرفوضة</span>
+                  <strong>{{ d.zatcaStats.rejected }}</strong>
                 </div>
               }
-            </mat-card-content>
-            <mat-card-actions>
-              <a mat-button routerLink="/zatca">إعداد ZATCA</a>
-            </mat-card-actions>
-          </mat-card>
+            </div>
+
+            <ng-template pTemplate="footer">
+              <p-button label="إعداد ZATCA" [link]="true" icon="pi pi-arrow-left"
+                        iconPos="left" [routerLink]="['/zatca']" />
+            </ng-template>
+          </p-card>
 
         </div>
 
         <!-- Recent invoices -->
-        <mat-card class="recent-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar class="card-icon blue">history</mat-icon>
-            <mat-card-title>آخر الفواتير</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="list-header recent-row">
+        <p-card styleClass="recent-card">
+          <ng-template pTemplate="header">
+            <div class="card-head">
+              <div class="card-head-icon blue"><i class="pi pi-history"></i></div>
+              <div class="card-head-title">آخر الفواتير</div>
+            </div>
+          </ng-template>
+
+          <div class="table-wrap">
+            <div class="table-header inv-cols">
               <span>رقم الفاتورة</span>
               <span>المشتري</span>
               <span>النوع</span>
-              <span class="amount-col">الإجمالي (ر.س)</span>
+              <span class="num-col">الإجمالي (ر.س)</span>
               <span>الحالة</span>
             </div>
+
             @for (inv of d.recentInvoices; track inv.id) {
-              <a class="recent-row clickable" [routerLink]="['/invoices', inv.id]">
-                <span class="inv-number">{{ inv.invoiceNumber }}</span>
+              <a class="table-row inv-cols" [routerLink]="['/invoices', inv.id]">
+                <span class="mono-num">{{ inv.invoiceNumber }}</span>
                 <span class="muted">{{ inv.buyerName || '—' }}</span>
                 <span>
-                  <span class="type-chip" [class]="inv.invoiceType === 'STANDARD' ? 'type-standard' : 'type-simplified'">
-                    {{ inv.invoiceType === 'STANDARD' ? 'ضريبية' : 'مبسّطة' }}
-                  </span>
+                  <p-tag [value]="inv.invoiceType === 'STANDARD' ? 'ضريبية' : 'مبسّطة'"
+                         [severity]="inv.invoiceType === 'STANDARD' ? 'info' : 'secondary'" />
                 </span>
-                <span class="amount-col amount">{{ inv.totalAmount | number:'1.2-2' }}</span>
+                <span class="num-col amount">{{ inv.totalAmount | number:'1.2-2' }}</span>
                 <span>
-                  <span class="status-chip" [class]="'status-' + inv.status.toLowerCase()">
-                    {{ statusLabel(inv.status) }}
-                  </span>
+                  <p-tag [value]="statusLabel(inv.status)"
+                         [severity]="invSeverity(inv.status)" />
                 </span>
               </a>
             }
+
             @if (d.recentInvoices.length === 0) {
               <div class="empty">لا توجد فواتير بعد</div>
             }
-          </mat-card-content>
-          <mat-card-actions>
-            <a mat-button routerLink="/invoices">عرض الكل</a>
-            <a mat-button color="primary" routerLink="/invoices/new">فاتورة جديدة</a>
-          </mat-card-actions>
-        </mat-card>
+          </div>
+
+          <ng-template pTemplate="footer">
+            <div class="card-footer-actions">
+              <p-button label="عرض الكل" [link]="true" [routerLink]="['/invoices']" />
+              <p-button label="فاتورة جديدة" icon="pi pi-plus" iconPos="right"
+                        [routerLink]="['/invoices/new']" />
+            </div>
+          </ng-template>
+        </p-card>
 
         <!-- Recent journal entries -->
-        <mat-card class="recent-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar class="card-icon purple">menu_book</mat-icon>
-            <mat-card-title>آخر القيود</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="list-header journal-row">
+        <p-card styleClass="recent-card">
+          <ng-template pTemplate="header">
+            <div class="card-head">
+              <div class="card-head-icon purple"><i class="pi pi-book"></i></div>
+              <div class="card-head-title">آخر القيود</div>
+            </div>
+          </ng-template>
+
+          <div class="table-wrap">
+            <div class="table-header je-cols">
               <span>رقم القيد</span>
               <span>البيان</span>
-              <span class="amount-col">إجمالي المدين</span>
+              <span class="num-col">إجمالي المدين</span>
               <span>الحالة</span>
             </div>
+
             @for (je of d.recentJournalEntries; track je.id) {
-              <a class="journal-row clickable" [routerLink]="['/journal', je.id]">
-                <span class="inv-number">{{ je.entryNumber }}</span>
+              <a class="table-row je-cols" [routerLink]="['/journal', je.id]">
+                <span class="mono-num">{{ je.entryNumber }}</span>
                 <span class="muted">{{ je.description }}</span>
-                <span class="amount-col amount">{{ je.totalDebit | number:'1.2-2' }}</span>
+                <span class="num-col amount">{{ je.totalDebit | number:'1.2-2' }}</span>
                 <span>
-                  <span class="status-chip" [class]="'status-' + je.status.toLowerCase()">
-                    {{ journalStatusLabel(je.status) }}
-                  </span>
+                  <p-tag [value]="journalStatusLabel(je.status)"
+                         [severity]="jeSeverity(je.status)" />
                 </span>
               </a>
             }
+
             @if (d.recentJournalEntries.length === 0) {
               <div class="empty">لا توجد قيود بعد</div>
             }
-          </mat-card-content>
-          <mat-card-actions>
-            <a mat-button routerLink="/journal">عرض الكل</a>
-            <a mat-button color="primary" routerLink="/journal/new">قيد جديد</a>
-          </mat-card-actions>
-        </mat-card>
+          </div>
+
+          <ng-template pTemplate="footer">
+            <div class="card-footer-actions">
+              <p-button label="عرض الكل" [link]="true" [routerLink]="['/journal']" />
+              <p-button label="قيد جديد" icon="pi pi-plus" iconPos="right"
+                        [routerLink]="['/journal/new']" />
+            </div>
+          </ng-template>
+        </p-card>
 
       }
     </div>
   `,
   styles: [`
-    .page-container { padding: 24px; max-width: 1100px; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .page-header h1 { margin: 0; font-size: 1.6rem; }
-    .sub { color: #546e7a; margin: 4px 0 0; font-size: 0.9rem; }
+    .dash-page {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .dash-title { margin: 0; font-size: 1.6rem; font-weight: 800; color: #1a237e; }
+    .dash-sub   { margin: 4px 0 0; font-size: 0.88rem; color: #78909c; }
+
     .header-actions { display: flex; gap: 8px; }
 
     /* KPI cards */
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-    .kpi-card mat-card-content { display: flex; align-items: center; gap: 16px; padding: 20px; }
-    .kpi-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
-                justify-content: center; flex-shrink: 0;
-                mat-icon { font-size: 26px; width: 26px; height: 26px; color: white; } }
-    .kpi-body { display: flex; flex-direction: column; gap: 2px; }
-    .kpi-label { font-size: 0.78rem; color: #546e7a; font-weight: 600; text-transform: uppercase; }
-    .kpi-value { font-size: 1.6rem; font-weight: 800; color: #1a1a2e; line-height: 1.1; }
-    .kpi-sub   { font-size: 0.75rem; color: #90a4ae; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
 
-    .accent-blue   .kpi-icon { background: #1a237e; }
-    .accent-green  .kpi-icon { background: #1b5e20; }
-    .accent-orange .kpi-icon { background: #e65100; }
-    .accent-purple .kpi-icon { background: #4a148c; }
+    .kpi-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+
+    .kpi-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      i { font-size: 1.4rem; color: white; }
+    }
+
+    .kpi-blue   .kpi-icon { background: #1a237e; }
+    .kpi-green  .kpi-icon { background: #1b5e20; }
+    .kpi-orange .kpi-icon { background: #e65100; }
+    .kpi-purple .kpi-icon { background: #4a148c; }
+
+    .kpi-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .kpi-label { font-size: 0.75rem; font-weight: 700; color: #78909c; text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-value { font-size: 1.7rem; font-weight: 800; color: #1a1a2e; line-height: 1.1; white-space: nowrap; }
+    .kpi-sub   { font-size: 0.73rem; color: #b0bec5; }
 
     /* Mid grid */
-    .mid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-    .card-icon { border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .card-icon.blue   { background: #e8eaf6; color: #1a237e; }
-    .card-icon.green  { background: #e8f5e9; color: #1b5e20; }
-    .card-icon.purple { background: #f3e5f5; color: #4a148c; }
+    .mid-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
 
-    .stat-row { display: flex; justify-content: space-between; align-items: center;
-                padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
-    .stat-label { display: flex; align-items: center; gap: 8px; color: #455a64; font-size: 0.9rem; }
-    .stat-value { font-weight: 700; font-size: 1rem; }
-    .warn { color: #c62828; }
-    .total-row .stat-label { font-weight: 700; color: #1a1a2e; }
-    .divider { margin: 4px 0; }
+    /* Card head */
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px 0;
+    }
 
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .card-head-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      i { font-size: 1rem; color: white; }
+
+      &.blue   { background: #1a237e; }
+      &.green  { background: #1b5e20; }
+      &.purple { background: #4a148c; }
+    }
+
+    .card-head-title { font-weight: 700; font-size: 0.95rem; color: #1a237e; }
+    .card-head-sub   { font-size: 0.78rem; color: #90a4ae; margin-top: 2px; }
+
+    /* Stat list */
+    .stat-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 0.88rem;
+      color: #546e7a;
+
+      span { display: flex; align-items: center; gap: 8px; }
+      strong { font-size: 1rem; color: #1a1a2e; }
+
+      &.total { border-bottom: none; font-weight: 700; color: #1a1a2e; }
+      &.warn strong { color: #c62828; }
+    }
+
+    /* Dots */
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
     .dot-grey   { background: #90a4ae; }
     .dot-green  { background: #43a047; }
     .dot-yellow { background: #fb8c00; }
     .dot-blue   { background: #1e88e5; }
     .dot-red    { background: #e53935; }
 
-    /* Recent lists */
-    .recent-card { margin-bottom: 20px; }
-    .list-header { font-size: 0.78rem; font-weight: 700; color: #546e7a;
-                   text-transform: uppercase; background: #f5f5f5;
-                   border-radius: 6px; padding: 8px 12px; }
+    /* Tables */
+    .table-wrap { border-radius: 8px; overflow: hidden; }
 
-    .recent-row  { display: grid; grid-template-columns: 150px 1fr 100px 130px 100px; gap: 12px;
-                   align-items: center; }
-    .journal-row { display: grid; grid-template-columns: 160px 1fr 150px 100px; gap: 12px;
-                   align-items: center; }
+    .table-header {
+      display: grid;
+      gap: 12px;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f7fb;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #78909c;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
 
-    .clickable { display: grid; padding: 10px 12px; border-bottom: 1px solid #f5f5f5;
-                 text-decoration: none; color: inherit; transition: background .15s;
-                 &:hover { background: #f9f9ff; } }
+    .table-row {
+      display: grid;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #f5f5f5;
+      text-decoration: none;
+      color: inherit;
+      transition: background .15s;
+      &:hover { background: #f9f9ff; }
+    }
 
-    .inv-number { font-weight: 600; color: #1a237e; font-family: monospace; font-size: 0.9rem; }
-    .muted { color: #78909c; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .amount-col { text-align: left; direction: ltr; }
-    .amount { font-family: monospace; font-weight: 600; color: #1b5e20; }
+    .inv-cols { grid-template-columns: 150px 1fr 90px 130px 90px; }
+    .je-cols  { grid-template-columns: 160px 1fr 140px 90px; }
 
-    .status-chip { padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
-    .status-draft     { background: #fff8e1; color: #f57f17; }
-    .status-confirmed { background: #e8f5e9; color: #1b5e20; }
-    .status-cancelled { background: #ffebee; color: #b71c1c; }
-    .status-posted    { background: #e8f5e9; color: #1b5e20; }
-    .status-void      { background: #ffebee; color: #b71c1c; }
+    .mono-num { font-weight: 700; color: #1a237e; font-family: monospace; font-size: 0.88rem; }
+    .muted    { color: #90a4ae; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .num-col  { text-align: left; direction: ltr; }
+    .amount   { font-family: monospace; font-weight: 600; color: #1b5e20; }
 
-    .type-chip { padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
-    .type-standard   { background: #e8eaf6; color: #1a237e; }
-    .type-simplified { background: #f3e5f5; color: #4a148c; }
+    .card-footer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-    .empty { text-align: center; padding: 32px; color: #999; font-size: 0.9rem; }
+    .empty {
+      text-align: center;
+      padding: 32px;
+      color: #b0bec5;
+      font-size: 0.9rem;
+    }
 
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .kpi-grid { grid-template-columns: 1fr 1fr; }
       .mid-grid { grid-template-columns: 1fr; }
+      .inv-cols { grid-template-columns: 130px 1fr 110px 90px; }
     }
   `]
 })
@@ -334,5 +459,13 @@ export class DashboardComponent implements OnInit {
 
   journalStatusLabel(s: string): string {
     return ({ DRAFT: 'مسودة', POSTED: 'مرحَّل', VOID: 'ملغى' } as Record<string, string>)[s] ?? s;
+  }
+
+  invSeverity(s: string): 'success' | 'danger' | 'secondary' | 'warn' {
+    return ({ DRAFT: 'secondary', CONFIRMED: 'success', CANCELLED: 'danger' } as Record<string, any>)[s] ?? 'secondary';
+  }
+
+  jeSeverity(s: string): 'success' | 'danger' | 'secondary' {
+    return ({ DRAFT: 'secondary', POSTED: 'success', VOID: 'danger' } as Record<string, any>)[s] ?? 'secondary';
   }
 }
