@@ -1,0 +1,65 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: accounting_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: accounting_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d accounting_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hoopoe-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: accounting_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - hoopoe-net
+
+  backend:
+    image: ${DOCKERHUB_USERNAME}/hoopoe-erp-backend:latest
+    container_name: accounting_backend
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/accounting_db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      PRIVATE_KEY_ENCRYPTION_KEY: ${PRIVATE_KEY_ENCRYPTION_KEY}
+      ZATCA_ENV: ${ZATCA_ENV:-sandbox}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hoopoe-net
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/hoopoe-erp-frontend:latest
+    container_name: accounting_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hoopoe-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  hoopoe-net:
+    driver: bridge
