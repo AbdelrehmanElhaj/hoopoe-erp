@@ -14,6 +14,10 @@ A multi-tenant, ZATCA Phase 2–compliant accounting SaaS built for Saudi Arabia
   - [Prerequisites](#prerequisites)
   - [Run with Docker Compose](#run-with-docker-compose)
   - [Run Locally (Development)](#run-locally-development)
+- [CI/CD Pipeline](#cicd-pipeline)
+  - [Pipeline Overview](#pipeline-overview)
+  - [GitHub Secrets](#github-secrets)
+  - [EC2 Setup](#ec2-setup)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
 - [Multitenancy](#multitenancy)
@@ -126,7 +130,12 @@ accounting-system/
 │       │   ├── settings/          # tenant profile editor
 │       │   └── zatca/             # onboarding & certificate management
 │       └── layout/shell/          # sidebar navigation, toolbar
-├── docker-compose.yml
+├── .github/
+│   └── workflows/
+│       └── deploy-dev.yml     # CI/CD: test → build → deploy on push to dev
+├── docker-compose.yml         # Local development (builds images locally)
+├── docker-compose.prod.yml    # Production (pulls images from Docker Hub)
+├── ec2-setup.sh               # One-time EC2 bootstrap script
 ├── .env.example
 └── .gitignore
 ```
@@ -202,6 +211,90 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Tenant-ID: mycompany" \
   -d '{"email":"owner@mycompany.sa","password":"SecurePass@123"}'
+```
+
+---
+
+## CI/CD Pipeline
+
+The project uses **GitHub Actions** to automatically test, build, and deploy to an AWS EC2 Ubuntu instance on every push to the `dev` branch.
+
+### Pipeline Overview
+
+```
+push to dev
+     │
+     ▼
+┌─────────────────────────────────────────┐
+│  Job 1: test                            │
+│  • Java 17 (Temurin) + Maven cache     │
+│  • ./mvnw test (backend unit tests)    │
+└────────────────┬────────────────────────┘
+                 │ (on success)
+                 ▼
+┌─────────────────────────────────────────┐
+│  Job 2: build-push                      │
+│  • Docker Buildx + GHA layer cache     │
+│  • Build backend image → Docker Hub    │
+│  • Build frontend image → Docker Hub   │
+│  • Tagged :latest and :<git-sha>       │
+└────────────────┬────────────────────────┘
+                 │ (on success)
+                 ▼
+┌─────────────────────────────────────────┐
+│  Job 3: deploy                          │
+│  • SCP docker-compose.prod.yml → EC2   │
+│  • SSH: write .env from GitHub Secrets │
+│  • docker compose pull + up -d         │
+│  • docker image prune -f               │
+└─────────────────────────────────────────┘
+```
+
+**Images:** `<DOCKERHUB_USERNAME>/hoopoe-erp-backend` and `<DOCKERHUB_USERNAME>/hoopoe-erp-frontend`
+
+**Deploy target:** `/opt/hoopoe-erp/` on the EC2 instance
+
+### GitHub Secrets
+
+Configure these in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description | How to generate |
+|---|---|---|
+| `DOCKERHUB_USERNAME` | Docker Hub username | — |
+| `DOCKERHUB_TOKEN` | Docker Hub access token | Docker Hub → Account Settings → Security → New Access Token |
+| `EC2_HOST` | EC2 public IP or DNS | AWS EC2 console |
+| `EC2_USER` | SSH user | `ubuntu` |
+| `EC2_SSH_KEY` | Private key content | Contents of your `.pem` file |
+| `DB_USER` | Database username | e.g. `accounting_user` |
+| `DB_PASSWORD` | Database password | — |
+| `JWT_SECRET` | HS512 signing key (≥ 64 bytes) | `openssl rand -base64 64` |
+| `PRIVATE_KEY_ENCRYPTION_KEY` | AES key for ZATCA certs (32 chars) | `openssl rand -hex 16` |
+
+### EC2 Setup
+
+Run once on a fresh Ubuntu EC2 instance to install Docker and create the app directory:
+
+```bash
+# Copy and run the bootstrap script
+scp -i your-key.pem ec2-setup.sh ubuntu@<EC2_HOST>:~
+ssh -i your-key.pem ubuntu@<EC2_HOST>
+sudo bash ec2-setup.sh
+```
+
+**Required security group rules:**
+
+| Port | Protocol | Source | Purpose |
+|---|---|---|---|
+| 22 | TCP | Your IP | SSH access |
+| 80 | TCP | 0.0.0.0/0 | HTTP (frontend + API proxy) |
+
+> Ports 5432, 6379, and 8080 must **not** be exposed publicly.
+
+**Verify deployment:**
+
+```bash
+curl http://<EC2_HOST>/api/actuator/health
+# → {"status":"UP"}
 ```
 
 ---
