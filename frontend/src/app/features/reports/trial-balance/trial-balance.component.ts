@@ -1,24 +1,22 @@
 import { Component, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { Button } from 'primeng/button';
+import { Select } from 'primeng/select';
+import { ProgressSpinner } from 'primeng/progressspinner';
 import { ReportService, TrialBalanceLine } from '../../../core/services/report.service';
 import { ExportService } from '../../../core/services/export.service';
 
 @Component({
   selector: 'app-trial-balance',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule,
-            MatProgressSpinnerModule, MatSelectModule, RouterLink],
+  imports: [FormsModule, DecimalPipe, RouterLink, Button, Select, ProgressSpinner],
   template: `
     <div class="page-container" dir="rtl">
       <div class="page-header">
         <div class="header-row">
-          <button mat-icon-button routerLink="/reports"><mat-icon>arrow_forward</mat-icon></button>
+          <p-button icon="pi pi-arrow-left" [text]="true" [rounded]="true" routerLink="/reports" />
           <h1>ميزان المراجعة</h1>
         </div>
 
@@ -29,33 +27,29 @@ import { ExportService } from '../../../core/services/export.service';
           <label>إلى
             <input type="date" [(ngModel)]="to" />
           </label>
-          <mat-select [(ngModel)]="typeFilter" style="width:160px">
-            <mat-option value="">كل أنواع الحسابات</mat-option>
-            <mat-option value="ASSET">الأصول</mat-option>
-            <mat-option value="LIABILITY">الخصوم</mat-option>
-            <mat-option value="EQUITY">حقوق الملكية</mat-option>
-            <mat-option value="REVENUE">الإيرادات</mat-option>
-            <mat-option value="EXPENSE">المصروفات</mat-option>
-          </mat-select>
-          <button mat-flat-button color="primary" (click)="load()" [disabled]="loading()">
-            <mat-icon>search</mat-icon> عرض
-          </button>
-          <button mat-stroked-button (click)="print()">
-            <mat-icon>print</mat-icon> طباعة
-          </button>
+          <p-select [(ngModel)]="typeFilter"
+                    [options]="accountTypeOptions"
+                    optionLabel="label" optionValue="value"
+                    [style]="{width:'180px'}" />
+          <p-button label="عرض" icon="pi pi-search" iconPos="right"
+                    (onClick)="load()" [disabled]="loading()" />
+          <p-button label="طباعة" icon="pi pi-print" iconPos="right"
+                    [outlined]="true" (onClick)="print()" />
           @if (lines().length) {
-            <button mat-stroked-button (click)="exportExcel()">
-              <mat-icon>table_view</mat-icon> Excel
-            </button>
+            <p-button label="Excel" icon="pi pi-table" iconPos="right"
+                      [outlined]="true" (onClick)="exportExcel()" />
           }
         </div>
       </div>
 
       @if (loading()) {
-        <div class="center"><mat-spinner diameter="40" /></div>
+        <div class="center">
+          <p-progressSpinner strokeWidth="4" [style]="{width:'40px', height:'40px'}" />
+        </div>
       } @else if (error()) {
         <div class="error">{{ error() }}</div>
       } @else if (lines().length) {
+
         <div class="report-summary">
           <div class="summary-card">
             <span>إجمالي المدين</span>
@@ -90,7 +84,7 @@ import { ExportService } from '../../../core/services/export.service';
                   <td class="code">{{ line.code }}</td>
                   <td class="name">{{ line.nameAr }}</td>
                   <td>{{ typeLabel(line.accountType) }}</td>
-                  <td class="center">{{ line.level }}</td>
+                  <td class="center-cell">{{ line.level }}</td>
                   <td class="num">{{ line.debitTotal > 0 ? (line.debitTotal | number:'1.2-2') : '' }}</td>
                   <td class="num">{{ line.creditTotal > 0 ? (line.creditTotal | number:'1.2-2') : '' }}</td>
                   <td class="num" [class.debit-bal]="line.balance > 0" [class.credit-bal]="line.balance < 0">
@@ -101,6 +95,7 @@ import { ExportService } from '../../../core/services/export.service';
             </tbody>
           </table>
         </div>
+
       } @else if (loaded()) {
         <div class="empty">لا توجد حركات في هذه الفترة</div>
       }
@@ -109,18 +104,26 @@ import { ExportService } from '../../../core/services/export.service';
   styles: [`
     .page-container { padding: 24px; direction: rtl; }
     .header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-    h1 { margin: 0; font-size: 1.4rem; }
+    h1 { margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e; }
     .filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-    .filters label { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
+    .filters label { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #546e7a; }
     .filters input[type=date] { border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; font-size: .9rem; }
+
     .report-summary { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-    .summary-card { background: #f5f5f5; border-radius: 8px; padding: 12px 20px; flex: 1; min-width: 160px; }
+    .summary-card {
+      background: #f5f5f5; border-radius: 8px; padding: 12px 20px;
+      flex: 1; min-width: 160px;
+    }
     .summary-card span { display: block; font-size: .8rem; color: #666; margin-bottom: 4px; }
     .summary-card strong { font-size: 1.1rem; color: #1a237e; }
     .summary-card.balanced strong { color: #2e7d32; }
+
     .table-wrapper { overflow-x: auto; }
     .report-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    .report-table th { background: #1a237e; color: #fff; padding: 10px 12px; text-align: right; white-space: nowrap; }
+    .report-table th {
+      background: #1a237e; color: #fff;
+      padding: 10px 12px; text-align: right; white-space: nowrap;
+    }
     .report-table td { padding: 7px 12px; border-bottom: 1px solid #eee; }
     .report-table tr:hover td { background: #f9f9f9; }
     .level-1 td { font-weight: 700; background: #e8eaf6; }
@@ -129,12 +132,14 @@ import { ExportService } from '../../../core/services/export.service';
     .level-4 td, .level-5 td { padding-right: 40px; }
     td.code { font-family: monospace; white-space: nowrap; }
     td.num, th.num { text-align: left; font-variant-numeric: tabular-nums; }
-    td.center { text-align: center; }
-    .debit-bal { color: #1565c0; font-weight: 600; }
+    td.center-cell { text-align: center; }
+    .debit-bal  { color: #1565c0; font-weight: 600; }
     .credit-bal { color: #c62828; font-weight: 600; }
+
     .center { display: flex; justify-content: center; padding: 40px; }
     .error { color: #c62828; padding: 20px; }
     .empty { color: #666; padding: 40px; text-align: center; }
+
     @media print {
       .page-header .filters, button { display: none !important; }
       .report-table { font-size: .8rem; }
@@ -149,10 +154,19 @@ export class TrialBalanceComponent {
   to   = new Date().toISOString().split('T')[0];
   typeFilter = '';
 
-  lines  = signal<TrialBalanceLine[]>([]);
+  lines   = signal<TrialBalanceLine[]>([]);
   loading = signal(false);
   loaded  = signal(false);
   error   = signal('');
+
+  accountTypeOptions = [
+    { label: 'كل أنواع الحسابات', value: '' },
+    { label: 'الأصول',            value: 'ASSET' },
+    { label: 'الخصوم',            value: 'LIABILITY' },
+    { label: 'حقوق الملكية',     value: 'EQUITY' },
+    { label: 'الإيرادات',         value: 'REVENUE' },
+    { label: 'المصروفات',         value: 'EXPENSE' },
+  ];
 
   filtered = computed(() =>
     this.typeFilter
@@ -161,7 +175,7 @@ export class TrialBalanceComponent {
   );
 
   totals = computed(() => {
-    const list = this.filtered();
+    const list   = this.filtered();
     const debit  = list.filter(l => l.leaf).reduce((s, l) => s + l.debitTotal,  0);
     const credit = list.filter(l => l.leaf).reduce((s, l) => s + l.creditTotal, 0);
     return { debit, credit, diff: Math.abs(debit - credit) };
@@ -172,12 +186,11 @@ export class TrialBalanceComponent {
     this.error.set('');
     this.svc.trialBalance(this.from, this.to).subscribe({
       next: data => { this.lines.set(data); this.loaded.set(true); this.loading.set(false); },
-      error: err  => { this.error.set('حدث خطأ أثناء تحميل التقرير'); this.loading.set(false); }
+      error: _   => { this.error.set('حدث خطأ أثناء تحميل التقرير'); this.loading.set(false); }
     });
   }
 
   print() { window.print(); }
-
   exportExcel() { this.exportSvc.exportTrialBalance(this.filtered(), this.from, this.to); }
 
   typeLabel(t: string) {

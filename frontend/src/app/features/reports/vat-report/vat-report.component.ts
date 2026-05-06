@@ -1,53 +1,49 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
+import { Button } from 'primeng/button';
+import { ProgressSpinner } from 'primeng/progressspinner';
 import { ReportService, VatReport } from '../../../core/services/report.service';
 import { ExportService } from '../../../core/services/export.service';
 
 @Component({
   selector: 'app-vat-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule,
-            MatProgressSpinnerModule, RouterLink],
+  imports: [FormsModule, DecimalPipe, RouterLink, Button, ProgressSpinner],
   template: `
     <div class="page-container" dir="rtl">
       <div class="page-header">
         <div class="header-row">
-          <button mat-icon-button routerLink="/reports"><mat-icon>arrow_forward</mat-icon></button>
+          <p-button icon="pi pi-arrow-left" [text]="true" [rounded]="true" routerLink="/reports" />
           <h1>تقرير ضريبة القيمة المضافة</h1>
         </div>
 
         <div class="filters">
           <label>من <input type="date" [(ngModel)]="from" /></label>
           <label>إلى <input type="date" [(ngModel)]="to" /></label>
-          <button mat-flat-button color="primary" (click)="load()" [disabled]="loading()">
-            <mat-icon>search</mat-icon> عرض
-          </button>
-          <button mat-stroked-button (click)="print()">
-            <mat-icon>print</mat-icon> طباعة
-          </button>
+          <p-button label="عرض" icon="pi pi-search" iconPos="right"
+                    (onClick)="load()" [disabled]="loading()" />
+          <p-button label="طباعة" icon="pi pi-print" iconPos="right"
+                    [outlined]="true" (onClick)="print()" />
           @if (report()) {
-            <button mat-stroked-button (click)="exportExcel()">
-              <mat-icon>table_view</mat-icon> Excel
-            </button>
+            <p-button label="Excel" icon="pi pi-table" iconPos="right"
+                      [outlined]="true" (onClick)="exportExcel()" />
           }
         </div>
 
-        <!-- Quick period shortcuts -->
         <div class="shortcuts">
           <span>فترة سريعة:</span>
           @for (q of quarters; track q.label) {
-            <button mat-stroked-button (click)="setQuarter(q)">{{ q.label }}</button>
+            <button class="quick-btn" (click)="setQuarter(q)">{{ q.label }}</button>
           }
         </div>
       </div>
 
       @if (loading()) {
-        <div class="center"><mat-spinner diameter="40" /></div>
+        <div class="center">
+          <p-progressSpinner strokeWidth="4" [style]="{width:'40px', height:'40px'}" />
+        </div>
       } @else if (error()) {
         <div class="error">{{ error() }}</div>
       } @else if (report()) {
@@ -57,7 +53,7 @@ import { ExportService } from '../../../core/services/export.service';
             <span>الفترة: {{ report()!.from }} إلى {{ report()!.to }}</span>
           </div>
 
-          <!-- Output VAT section -->
+          <!-- Output VAT -->
           <div class="section">
             <h3 class="section-header output">الضريبة على المبيعات (ضريبة المخرجات)</h3>
             <table class="vat-table">
@@ -96,7 +92,7 @@ import { ExportService } from '../../../core/services/export.service';
             </table>
           </div>
 
-          <!-- Input VAT section -->
+          <!-- Input VAT -->
           <div class="section">
             <h3 class="section-header input">الضريبة على المشتريات (ضريبة المدخلات)</h3>
             <table class="vat-table">
@@ -119,7 +115,7 @@ import { ExportService } from '../../../core/services/export.service';
             <strong>{{ (report()!.netVatPayable < 0 ? -report()!.netVatPayable : report()!.netVatPayable) | number:'1.2-2' }} ر.س</strong>
           </div>
 
-          <!-- Invoice counts -->
+          <!-- Invoice stats -->
           <div class="invoice-stats">
             <div class="stat">
               <span>فواتير ضريبية (B2B)</span>
@@ -141,37 +137,59 @@ import { ExportService } from '../../../core/services/export.service';
   styles: [`
     .page-container { padding: 24px; direction: rtl; }
     .header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-    h1 { margin: 0; font-size: 1.4rem; }
-    .filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-    .filters label { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
+    h1 { margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e; }
+
+    .filters {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .filters label { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #546e7a; }
     .filters input[type=date] { border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; font-size: .9rem; }
-    .shortcuts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; font-size: .9rem; }
+
+    .shortcuts {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 20px; font-size: .9rem;
+    }
     .shortcuts span { color: #666; }
+    .quick-btn {
+      padding: 5px 12px; font-size: .8rem; font-family: 'Cairo', sans-serif;
+      border: 1.5px solid #d0d0d0; border-radius: 16px; background: white;
+      cursor: pointer; color: #555; transition: all .15s;
+    }
+    .quick-btn:hover { border-color: #1a237e; color: #1a237e; }
+
     .report { max-width: 800px; }
     .report-title { text-align: center; margin-bottom: 24px; }
     .report-title h2 { margin: 0 0 4px; }
     .report-title span { color: #666; font-size: .9rem; }
+
     .section { margin-bottom: 24px; }
     .section-header { padding: 10px 14px; border-radius: 6px 6px 0 0; margin: 0; font-size: 1rem; }
     .section-header.output { background: #e8eaf6; color: #1a237e; }
     .section-header.input  { background: #e8f5e9; color: #1b5e20; }
+
     .vat-table { width: 100%; border-collapse: collapse; }
     .vat-table th { background: #f5f5f5; padding: 9px 14px; text-align: right; font-size: .9rem; border: 1px solid #ddd; }
     .vat-table td { padding: 9px 14px; border: 1px solid #eee; font-size: .9rem; }
     th.num, td.num { text-align: left; font-variant-numeric: tabular-nums; }
     .total-row td { background: #fafafa; border-top: 2px solid #ccc; }
     .credit-note-row td { color: #c62828; }
-    .net-vat { display: flex; justify-content: space-between; align-items: center;
-               padding: 18px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1rem; }
+
+    .net-vat {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1rem;
+    }
     .net-vat.payable { background: #fff3e0; }
     .net-vat.refund  { background: #e8f5e9; }
     .net-vat strong  { font-size: 1.4rem; }
+
     .invoice-stats { display: flex; gap: 16px; flex-wrap: wrap; }
     .stat { background: #f5f5f5; border-radius: 8px; padding: 12px 20px; flex: 1; min-width: 140px; }
-    .stat span  { display: block; font-size: .8rem; color: #666; margin-bottom: 4px; }
+    .stat span   { display: block; font-size: .8rem; color: #666; margin-bottom: 4px; }
     .stat strong { font-size: 1.3rem; color: #1a237e; }
+
     .center { display: flex; justify-content: center; padding: 40px; }
     .error  { color: #c62828; padding: 20px; }
+
     @media print { .page-header button, .filters, .shortcuts { display: none !important; } }
   `]
 })
@@ -204,12 +222,10 @@ export class VatReportComponent {
   }
 
   print() { window.print(); }
-
   exportExcel() { this.exportSvc.exportVatReport(this.report()!); }
 
   private buildQuarters() {
-    const now = new Date();
-    const yr  = now.getFullYear();
+    const yr = new Date().getFullYear();
     return [
       { label: `ر1 ${yr}`, from: `${yr}-01-01`, to: `${yr}-03-31` },
       { label: `ر2 ${yr}`, from: `${yr}-04-01`, to: `${yr}-06-30` },

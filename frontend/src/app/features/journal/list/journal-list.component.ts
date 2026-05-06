@@ -1,125 +1,113 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe, DatePipe } from '@angular/common';
+import { TableModule } from 'primeng/table';
+import { Button } from 'primeng/button';
+import { Tag } from 'primeng/tag';
+import { Tooltip } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
 import { JournalService, JournalEntry } from '../../../core/services/journal.service';
 
 @Component({
   selector: 'app-journal-list',
   standalone: true,
-  imports: [
-    RouterLink, MatCardModule, MatTableModule, MatButtonModule,
-    MatIconModule, MatProgressBarModule, MatSnackBarModule, MatTooltipModule, DecimalPipe, DatePipe
-  ],
+  imports: [RouterLink, DecimalPipe, DatePipe, TableModule, Button, Tag, Tooltip],
   template: `
-    <div class="page-container">
+    <div class="page-wrap" dir="rtl">
+
       <div class="page-header">
-        <h1>القيود اليومية</h1>
-        <button mat-flat-button color="primary" routerLink="new">
-          <mat-icon>add</mat-icon>
-          قيد جديد
-        </button>
+        <h1 class="page-title">القيود اليومية</h1>
+        <p-button label="قيد جديد" icon="pi pi-plus" iconPos="right" routerLink="new" />
       </div>
 
-      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+      <p-table [value]="entries()" [loading]="loading()"
+               styleClass="journal-table" [rowHover]="true">
 
-      <mat-card>
-        <mat-card-content>
-          <table mat-table [dataSource]="entries()">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>رقم القيد</th>
+            <th>التاريخ</th>
+            <th>البيان</th>
+            <th>إجمالي المدين</th>
+            <th>إجمالي الدائن</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </ng-template>
 
-            <ng-container matColumnDef="number">
-              <th mat-header-cell *matHeaderCellDef>رقم القيد</th>
-              <td mat-cell *matCellDef="let e">
-                <strong>{{ e.entryNumber }}</strong>
-              </td>
-            </ng-container>
+        <ng-template pTemplate="body" let-e>
+          <tr>
+            <td><strong>{{ e.entryNumber }}</strong></td>
+            <td>{{ e.entryDate | date:'yyyy/MM/dd' }}</td>
+            <td>{{ e.description }}</td>
+            <td class="amount-debit">{{ e.totalDebit | number:'1.2-2' }}</td>
+            <td class="amount-credit">{{ e.totalCredit | number:'1.2-2' }}</td>
+            <td>
+              <p-tag [value]="statusLabel(e.status)"
+                     [severity]="statusSeverity(e.status)"
+                     [rounded]="true" />
+            </td>
+            <td class="actions-cell">
+              <p-button icon="pi pi-eye" [text]="true" [rounded]="true"
+                        severity="secondary" size="small"
+                        [routerLink]="['/journal', e.id]"
+                        pTooltip="عرض" />
+              @if (e.status === 'DRAFT') {
+                <p-button label="ترحيل" icon="pi pi-send" iconPos="right"
+                          [outlined]="true" size="small"
+                          (onClick)="post(e.id)" />
+              }
+            </td>
+          </tr>
+        </ng-template>
 
-            <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>التاريخ</th>
-              <td mat-cell *matCellDef="let e">{{ e.entryDate | date:'yyyy/MM/dd' }}</td>
-            </ng-container>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="empty-cell">
+              <i class="pi pi-book empty-icon"></i>
+              <p>لا توجد قيود بعد</p>
+            </td>
+          </tr>
+        </ng-template>
 
-            <ng-container matColumnDef="description">
-              <th mat-header-cell *matHeaderCellDef>البيان</th>
-              <td mat-cell *matCellDef="let e">{{ e.description }}</td>
-            </ng-container>
+      </p-table>
 
-            <ng-container matColumnDef="debit">
-              <th mat-header-cell *matHeaderCellDef>إجمالي المدين</th>
-              <td mat-cell *matCellDef="let e">
-                <span class="amount amount-positive">{{ e.totalDebit | number:'1.2-2' }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="credit">
-              <th mat-header-cell *matHeaderCellDef>إجمالي الدائن</th>
-              <td mat-cell *matCellDef="let e">
-                <span class="amount">{{ e.totalCredit | number:'1.2-2' }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>الحالة</th>
-              <td mat-cell *matCellDef="let e">
-                <span class="status-chip" [class]="'status-' + e.status.toLowerCase()">
-                  {{ statusLabel(e.status) }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let e" class="actions-cell">
-                <a mat-icon-button [routerLink]="['/journal', e.id]" matTooltip="عرض">
-                  <mat-icon>visibility</mat-icon>
-                </a>
-                @if (e.status === 'DRAFT') {
-                  <button mat-stroked-button color="primary" (click)="post(e.id)" class="action-btn">
-                    <mat-icon>publish</mat-icon> ترحيل
-                  </button>
-                }
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="columns"></tr>
-            <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-
-            @if (entries().length === 0 && !loading()) {
-              <tr class="mat-row">
-                <td [attr.colspan]="columns.length" style="text-align:center;padding:48px;color:#999">
-                  لا توجد قيود بعد
-                </td>
-              </tr>
-            }
-          </table>
-        </mat-card-content>
-      </mat-card>
     </div>
   `,
   styles: [`
-    .status-chip { padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-    .action-btn { height: 32px; font-size: 0.8rem; }
+    .page-wrap { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+    .page-title { margin: 0; font-size: 1.5rem; font-weight: 800; color: #1a237e; }
+
+    ::ng-deep .journal-table {
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      .p-datatable-header-cell { background: #f5f7fb; font-weight: 700; color: #546e7a; font-size: 0.82rem; }
+    }
+
+    .amount-debit, .amount-credit { font-family: monospace; direction: ltr; text-align: left; }
+    .amount-debit  { color: #1b5e20; }
+    .amount-credit { color: #1a237e; }
+
     .actions-cell { display: flex; align-items: center; gap: 4px; }
+
+    .empty-cell { text-align: center; padding: 48px; }
+    .empty-icon { font-size: 3rem; color: #cfd8dc; display: block; margin-bottom: 12px; }
+    .empty-cell p { color: #b0bec5; margin: 0; }
   `]
 })
 export class JournalListComponent implements OnInit {
   private journalService = inject(JournalService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(MessageService);
 
   entries = signal<JournalEntry[]>([]);
   loading = signal(true);
 
-  columns = ['number', 'date', 'description', 'debit', 'credit', 'status', 'actions'];
-
-  ngOnInit(): void {
-    this.load();
-  }
+  ngOnInit(): void { this.load(); }
 
   load(): void {
     this.journalService.findAll().subscribe({
@@ -132,13 +120,17 @@ export class JournalListComponent implements OnInit {
     this.journalService.post(id).subscribe({
       next: res => {
         this.entries.update(list => list.map(e => e.id === id ? res.data : e));
-        this.snackBar.open('تم ترحيل القيد بنجاح', 'إغلاق', { duration: 3000 });
+        this.toast.add({ severity: 'success', summary: 'تم', detail: 'تم ترحيل القيد بنجاح', life: 3000 });
       },
-      error: err => this.snackBar.open(err.error?.message ?? 'حدث خطأ', 'إغلاق', { duration: 4000 })
+      error: err => this.toast.add({ severity: 'error', summary: 'خطأ', detail: err.error?.message ?? 'حدث خطأ', life: 4000 })
     });
   }
 
   statusLabel(s: string): string {
-    return ({ DRAFT: 'مسودة', POSTED: 'مرحّل', VOID: 'ملغى' } as Record<string,string>)[s] ?? s;
+    return ({ DRAFT: 'مسودة', POSTED: 'مرحَّل', VOID: 'ملغى' } as Record<string, string>)[s] ?? s;
+  }
+
+  statusSeverity(s: string): 'warn' | 'success' | 'danger' {
+    return ({ DRAFT: 'warn', POSTED: 'success', VOID: 'danger' } as Record<string, any>)[s] ?? 'secondary';
   }
 }
