@@ -13,18 +13,19 @@ set -euo pipefail
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# ─── Config ──────────────────────────────────────────────────────────────────
+# ─── Config (New Tenant: Al-Binyah Contracting) ─────────────────────────────
 BASE_URL="${API_URL:-http://localhost:8080/api}"
-TENANT="${TENANT:-al-nakheel}"
-OWNER_EMAIL="owner@al-nakheel.sa"
-OWNER_PASSWORD="Demo@12345678"
-OWNER_NAME_EN="Mohammed Abdullah Al-Nakheel"
+TENANT="${TENANT:-al-binyah}"  # New Subdomain
+OWNER_EMAIL="admin@albinyah.com.sa"
+OWNER_PASSWORD="Secure@Pass2026"
+OWNER_NAME_EN="Fahad Sulaiman Al-Rasheed"
 
-COMPANY_NAME_AR="شركة النخيل للتجارة وتقنية المعلومات"
-COMPANY_NAME_EN="Al-Nakheel Trading & IT Solutions Co."
-VAT_NUMBER="310122445500003"
-CR_NUMBER="1010524371"
-ADDRESS_AR="طريق الملك فهد، حي العليا، الرياض 12211"
+COMPANY_NAME_AR="شركة البنية للمقاولات العامة"
+COMPANY_NAME_EN="Al-Binyah General Contracting Co."
+VAT_NUMBER="310555666700003"  # Unique Saudi VAT
+CR_NUMBER="1010654321"        # Unique CR Number
+ADDRESS_AR="طريق الملك عبدالعزيز، حي الياسمين، الرياض 13322"
+
 
 # ─── Colours ─────────────────────────────────────────────────────────────────
 R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
